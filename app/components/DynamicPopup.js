@@ -285,7 +285,7 @@ export default function DynamicPopup({ templateId, onComplete }) {
                 </svg>
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                {currentStep === "userInfo" ? "Quick Setup" : "Quick Quiz"}
+                {currentStep === "userInfo" ? "Enter Details" : "Quick Quiz"}
               </h2>
               <p className="text-gray-800">
                 {currentStep === "userInfo" 
@@ -344,7 +344,7 @@ export default function DynamicPopup({ templateId, onComplete }) {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-900 mb-1">
-                    Password
+                    Phone Number
                   </label>
                   <input
                     type="password"
