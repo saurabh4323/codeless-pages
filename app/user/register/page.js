@@ -600,7 +600,7 @@ export default function UserAuth() {
                           </svg>
                         </div>
                         <p className="text-gray-300 text-sm">
-                          Enter your email address and we'll send you a link to reset your password.
+                          Enter your email address and will send you a link to reset your password.
                         </p>
                       </div>
 
