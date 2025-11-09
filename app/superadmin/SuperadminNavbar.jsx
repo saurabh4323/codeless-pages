@@ -10,7 +10,7 @@ const navLinks = [
   { name: "Templates", href: "/superadmin/templates", icon: FileText },
 
   { name: "Tokens", href: "/superadmin/tokens", icon: Key },
-  { name: "Questions", href: "/superadmin/questions", icon: MessageSquare },
+  // { name: "Questions", href: "/superadmin/questions", icon: MessageSquare },
   { name: "Responses", href: "/superadmin/responses", icon: ClipboardList },
 ];
 
