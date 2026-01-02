@@ -1,7 +1,5 @@
-"use client";
 import React, { useState } from 'react';
 import { Check } from 'lucide-react';
-import UserNavbar from '../user/Header';
 
 export default function PricingSection() {
   const [billingCycle, setBillingCycle] = useState('monthly');
@@ -70,7 +68,6 @@ const plans = [
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-20 px-6 relative overflow-hidden">
       {/* Decorative circles */}
-      <UserNavbar></UserNavbar>
       <div className="absolute top-32 left-16 w-4 h-4 bg-teal-400 rounded-full"></div>
       <div className="absolute top-64 right-32 w-4 h-4 bg-blue-500 rounded-full"></div>
       <div className="absolute bottom-32 right-16 w-6 h-6 bg-pink-500 rounded-full"></div>

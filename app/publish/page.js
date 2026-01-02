@@ -1,336 +1,219 @@
-// Your Published Content Page
 "use client";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
 import UserNavbar from "../user/Header";
-import Link from "next/link";
-import {
-  ArrowRight,
-  Layout,
-  CreditCard,
-  Heart,
-  Image,
-  MessageSquare,
-  Package,
-  Gift,
-  Video,
-  CheckCircle,
-  FileText,
-  BookPlus,
-  Eye,
-  Share2,
-  Edit,
-} from "lucide-react";
 
-// Your Published Content Templates
+// Lead Generation Templates
 const templates = [
   {
     name: "Landing Page",
-    description: "A sleek page to capture leads and drive conversions.",
+    description: "We run our service on Google Cloud, which guarantees premium availability and reliability and one of the fastest networks out there.",
     redirect: "/layouts/layoutone",
-    color: "from-emerald-500 to-teal-600",
-    bgColor: "bg-emerald-500/10",
-    iconColor: "text-emerald-400",
-    icon: Layout,
+    iconType: "layout",
     type: "marketing",
-    usageCount: 1250,
-    views: 5420,
-    publishedDate: "2024-01-15",
+    featured: false,
   },
   {
     name: "Payment Page",
-    description: "Showcase your pricing tiers with stunning visuals.",
+    description: "We are consistently among the first to integrate and offer the latest speed technologies such as the newest PHP versions.",
     redirect: "/layouts/layouttwo",
-    color: "from-rose-500 to-pink-600",
-    bgColor: "bg-rose-500/10",
-    iconColor: "text-rose-400",
-    icon: CreditCard,
+    iconType: "card",
     type: "commerce",
-    usageCount: 890,
-    views: 3840,
-    publishedDate: "2024-01-20",
+    featured: true,
   },
   {
     name: "Thank You Page",
-    description: "Thank you greeting message for completed actions.",
+    description: "We developed a custom PHP setup that cuts the TTFB (time to first byte) and makes the overall resource usage more efficient.",
     redirect: "/layouts/layoutthree",
-    color: "from-amber-500 to-orange-600",
-    bgColor: "bg-amber-500/10",
-    iconColor: "text-amber-400",
-    icon: Heart,
+    iconType: "heart",
     type: "conversion",
-    usageCount: 670,
-    views: 2890,
-    publishedDate: "2024-01-25",
+    featured: false,
   },
   {
     name: "Testimonial Image",
-    description: "Display customer testimonials to build trust.",
+    description: "Free CDN powered by CloudFlare allows you to cache content and serve it from servers closest to your visitors for faster web serving.",
     redirect: "/layouts/layoutfour",
-    color: "from-violet-500 to-purple-600",
-    bgColor: "bg-violet-500/10",
-    iconColor: "text-violet-400",
-    icon: Image,
+    iconType: "image",
     type: "social proof",
-    usageCount: 540,
-    views: 2150,
-    publishedDate: "2024-02-01",
+    featured: false,
   },
   {
     name: "Testimonial",
-    description: "Encourage users to subscribe to your newsletter.",
+    description: "Our MySQL setup allows for a large number of requests to be processed simultaneously and masterfully handles heavy queries.",
     redirect: "/acordial/publish",
-    color: "from-cyan-500 to-blue-600",
-    bgColor: "bg-cyan-500/10",
-    iconColor: "text-cyan-400",
-    icon: MessageSquare,
+    iconType: "message",
     type: "social proof",
-    usageCount: 430,
-    views: 1780,
-    publishedDate: "2024-02-05",
+    featured: false,
   },
   {
     name: "All Products",
-    description: "Advertise your upcoming event with style.",
+    description: "For WordPress sites we have developed a powerful plugin that gives you control over the server and make it significantly faster.",
     redirect: "/layouts/layoutsix",
-    color: "from-indigo-500 to-blue-600",
-    bgColor: "bg-indigo-500/10",
-    iconColor: "text-indigo-400",
-    icon: Package,
+    iconType: "package",
     type: "catalog",
-    usageCount: 720,
-    views: 3120,
-    publishedDate: "2024-02-10",
+    featured: false,
   },
   {
     name: "Gift Page",
-    description: "Showcase your best gifts in a professional layout.",
+    description: "We run our service on Google Cloud, which guarantees premium availability and reliability and one of the fastest networks out there.",
     redirect: "/layouts/layoutseven",
-    color: "from-pink-500 to-rose-600",
-    bgColor: "bg-pink-500/10",
-    iconColor: "text-pink-400",
-    icon: Gift,
+    iconType: "gift",
     type: "promotion",
-    usageCount: 380,
-    views: 1650,
-    publishedDate: "2024-02-15",
+    featured: false,
   },
   {
     name: "Video Testimonial",
-    description: "Present detailed case studies to build credibility.",
+    description: "We are consistently among the first to integrate and offer the latest speed technologies such as the newest PHP versions.",
     redirect: "/layouts/layouteight",
-    color: "from-sky-500 to-cyan-600",
-    bgColor: "bg-sky-500/10",
-    iconColor: "text-sky-400",
-    icon: Video,
+    iconType: "video",
     type: "social proof",
-    usageCount: 290,
-    views: 1280,
-    publishedDate: "2024-02-20",
+    featured: false,
   },
   {
     name: "Main Thank You",
-    description: "Display customer testimonials to boost trust.",
+    description: "We developed a custom PHP setup that cuts the TTFB (time to first byte) and makes the overall resource usage more efficient.",
     redirect: "/layouts/layoutnine",
-    color: "from-green-500 to-emerald-600",
-    bgColor: "bg-green-500/10",
-    iconColor: "text-green-400",
-    icon: CheckCircle,
+    iconType: "check",
     type: "conversion",
-    usageCount: 510,
-    views: 2210,
-    publishedDate: "2024-02-25",
+    featured: false,
   },
   {
     name: "Basic",
-    description: "Showcase your pricing tiers with clarity.",
+    description: "Free CDN powered by CloudFlare allows you to cache content and serve it from servers closest to your visitors for faster web serving.",
     redirect: "/layouts/layoutten",
-    color: "from-orange-500 to-amber-600",
-    bgColor: "bg-orange-500/10",
-    iconColor: "text-orange-400",
-    icon: FileText,
+    iconType: "file",
     type: "basic",
-    usageCount: 820,
-    views: 3560,
-    publishedDate: "2024-03-01",
+    featured: false,
   },
   {
     name: "Form",
-    description: "Highlight your latest blog posts to engage readers.",
+    description: "Our MySQL setup allows for a large number of requests to be processed simultaneously and masterfully handles heavy queries.",
     redirect: "/layouts/layouteleven",
-    color: "from-blue-500 to-indigo-600",
-    bgColor: "bg-blue-500/10",
-    iconColor: "text-blue-400",
-    icon: BookPlus,
+    iconType: "book",
     type: "lead capture",
-    usageCount: 640,
-    views: 2780,
-    publishedDate: "2024-03-05",
+    featured: false,
   },
 ];
 
-// Animation variants for cards
-const cardVariants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, ease: "easeOut" },
-  },
-  exit: { opacity: 0, y: -30, transition: { duration: 0.4 } },
+const Icon = ({ type, className }) => {
+  const icons = {
+    layout: (
+      <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z" />
+      </svg>
+    ),
+    card: (
+      <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+      </svg>
+    ),
+    heart: (
+      <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+      </svg>
+    ),
+    image: (
+      <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    ),
+    message: (
+      <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+      </svg>
+    ),
+    package: (
+      <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+      </svg>
+    ),
+    gift: (
+      <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+      </svg>
+    ),
+    video: (
+      <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+      </svg>
+    ),
+    check: (
+      <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+    file: (
+      <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    ),
+    book: (
+      <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+      </svg>
+    ),
+  };
+  
+  return icons[type] || icons.layout;
 };
 
 export default function YourPublishedContent() {
   return (
-    <>
-      <UserNavbar />
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          {/* Back Link */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="mb-10"
-          >
-            <Link
-              href="/"
-              className="inline-flex items-center text-emerald-400 hover:text-emerald-300 font-semibold transition-colors duration-200"
+    <div className="min-h-screen bg-gray-50 py-16 px-4 sm:px-6 lg:px-8">
+    <UserNavbar></UserNavbar>
+      <div className="max-w-7xl mx-auto">
+      
+
+        {/* Title */}
+        <div className="text-center mb-16">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mt-20">
+            Lead Generation Content
+          </h1>
+          <p className="mt-3 text-lg text-gray-600 max-w-3xl mx-auto">
+            Explore our collection of high-converting templates designed to capture and nurture leads effectively.
+          </p>
+        </div>
+
+        {/* Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {templates.map((template, index) => (
+            <div
+              key={template.name + index}
+              className="group cursor-pointer transform transition-transform duration-200 hover:-translate-y-1"
+              onClick={() => (window.location.href = template.redirect)}
             >
-              <svg
-                className="w-5 h-5 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-              Back to Dashboard
-            </Link>
-          </motion.div>
+              <div className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-lg transition-all duration-300 h-full flex flex-col border border-gray-100 hover:border-gray-900">
+                {/* Icon */}
+                <div className="mb-6">
+                  <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-gray-100">
+                    <Icon 
+                      type={template.iconType} 
+                      className="h-8 w-8 text-gray-700"
+                    />
+                  </div>
+                </div>
 
-          {/* Title */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-12"
-          >
-            <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-200 via-white to-cyan-200 mb-4">
-              Your Published Content
-            </h1>
-            <p className="mt-3 text-xl text-slate-200/80 max-w-3xl mx-auto">
-              Manage and view all your published templates. Track performance and engagement metrics.
-            </p>
-          </motion.div>
+                {/* Content */}
+                <div className="flex-grow">
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">
+                    {template.name}
+                  </h3>
 
-          {/* Cards Grid */}
-          <AnimatePresence>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {templates.map((template, index) => {
-                const IconComponent = template.icon;
-                return (
-                  <motion.div
-                    key={template.id || template._id || index}
-                    variants={cardVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
-                    whileHover={{
-                      scale: 1.03,
-                      y: -8,
-                    }}
-                    className="group cursor-pointer"
-                    onClick={() => (window.location.href = template.redirect)}
-                  >
-                    <div className="relative bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden shadow-2xl hover:shadow-3xl hover:shadow-emerald-500/10 transition-all duration-500 group-hover:border-white/20">
-                      {/* Animated gradient overlay */}
-                      <div
-                        className={`absolute inset-0 bg-gradient-to-br ${template.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500`}
-                      ></div>
+                  <p className="text-gray-600 leading-relaxed text-sm">
+                    {template.description}
+                  </p>
+                </div>
 
-                      {/* Content */}
-                      <div className="relative p-6">
-                        {/* Header with icon and actions */}
-                        <div className="flex items-start justify-between mb-4">
-                          <div
-                            className={`${template.bgColor} backdrop-blur-sm rounded-xl p-3 group-hover:scale-110 transition-transform duration-300 border border-white/10`}
-                          >
-                            <IconComponent
-                              className={`h-6 w-6 ${template.iconColor}`}
-                            />
-                          </div>
-                          <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            <button className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors">
-                              <Eye className="h-4 w-4 text-white/70" />
-                            </button>
-                            <button className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors">
-                              <Share2 className="h-4 w-4 text-white/70" />
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Title and description */}
-                        <h3 className="text-lg font-bold text-white mb-2 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-emerald-200 group-hover:to-cyan-200 transition-all duration-300">
-                          {template.name}
-                        </h3>
-
-                        <p className="text-slate-300/70 text-sm leading-relaxed mb-4 line-clamp-2">
-                          {template.description}
-                        </p>
-
-                        {/* Stats and metadata */}
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="px-2 py-1 bg-white/10 rounded-full text-slate-300 capitalize">
-                              {template.type}
-                            </span>
-                            <span className="text-emerald-400 font-medium">
-                              Published {new Date(template.publishedDate).toLocaleDateString()}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-4 text-xs text-slate-400">
-                              <div className="flex items-center">
-                                <Eye className="h-3 w-3 mr-1" />
-                                {template.views.toLocaleString()} views
-                              </div>
-                              <div className="flex items-center">
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                {template.usageCount} uses
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Progress bar for engagement */}
-                          <div className="w-full bg-white/10 rounded-full h-1.5">
-                            <div 
-                              className={`h-1.5 rounded-full bg-gradient-to-r ${template.color} transition-all duration-1000`}
-                              style={{ width: `${Math.min((template.views / 5000) * 100, 100)}%` }}
-                            ></div>
-                          </div>
-                        </div>
-
-                        {/* Hover action indicator */}
-                        <div className="mt-4 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                          <span className="text-xs text-emerald-300 font-medium">
-                            Click to manage
-                          </span>
-                          <ArrowRight className="h-4 w-4 text-emerald-400 group-hover:translate-x-1 transition-transform duration-300" />
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
+                {/* Type Badge */}
+                <div className="mt-6 pt-4 border-t border-gray-100">
+                  <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full capitalize">
+                    {template.type}
+                  </span>
+                </div>
+              </div>
             </div>
-          </AnimatePresence>
+          ))}
         </div>
       </div>
-    </>
+    </div>
   );
 }
