@@ -446,7 +446,7 @@ export default function OrganizationsPage() {
           </div>
           <h3 className="text-xl font-bold text-white mb-2">No matches found</h3>
           <p className="text-gray-400 max-w-md mx-auto">
-            {"We couldn't find any organizations or pages matching"} "{searchTerm}". {"Try checking for typos or use different keywords."}
+            {"We couldn't find any organizations or pages matching"} {searchTerm}. {"Try checking for typos or use different keywords."}
           </p>
         </div>
       ) : (

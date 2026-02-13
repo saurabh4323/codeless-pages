@@ -209,7 +209,7 @@ export default function EditContent() {
           </div>
           <h2 className="text-3xl font-bold text-slate-900 mb-4 tracking-tight">Access Denied</h2>
           <p className="text-slate-500 font-light text-lg mb-10 leading-relaxed">
-            You don't have permission to edit this content. This masterpiece belongs to another creator.
+            You do not have permission to edit this content. This masterpiece belongs to another creator.
           </p>
           <button
             onClick={() => router.push("/publish")}
