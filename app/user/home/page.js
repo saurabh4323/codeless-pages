@@ -32,6 +32,7 @@ import {
 import { motion } from "framer-motion";
 import UserNavbar from "../Header";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function UserDashboard() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -141,10 +142,11 @@ export default function UserDashboard() {
               className="relative"
             >
               <div className="relative bg-white p-2 rounded-3xl border border-slate-100 shadow-2xl overflow-hidden aspect-[4/3]">
-                <img 
+                <Image 
                   src="/codeless_v2.png" 
                   alt="Codeless Dashboard" 
-                  className="w-full h-full object-cover rounded-2xl"
+                  fill
+                  className="object-cover rounded-2xl"
                 />
               </div>
             </motion.div>
@@ -223,7 +225,7 @@ export default function UserDashboard() {
                       {tmpl.tag}
                     </span>
                   </div>
-                  <img src={tmpl.img} alt={tmpl.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                  <Image src={tmpl.img} alt={tmpl.title} fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
                   <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/5 transition-colors duration-500" />
                 </div>
                 <div className="p-8">
@@ -281,7 +283,7 @@ export default function UserDashboard() {
               </div>
               <h2 className="text-3xl md:text-5xl font-semibold mb-6 tracking-tight">Enterprise-Grade Performance.<br/>For Everyone.</h2>
               <p className="text-slate-400 font-light text-lg leading-relaxed mb-8">
-                Your pages are hosted on a highly available, global edge network. Whether it's 10 or 10,000 visitors — your site stays fast and secure.
+                Your pages are hosted on a highly available, global edge network. Whether it&apos;s 10 or 10,000 visitors — your site stays fast and secure.
               </p>
               <div className="grid grid-cols-2 gap-6">
                 {[
@@ -363,7 +365,7 @@ export default function UserDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {testimonials.map((t, i) => (
               <div key={i} className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden hover:shadow-md transition-shadow">
-                <p className="text-slate-600 text-sm font-light leading-relaxed mb-6 italic relative z-10">"{t.text}"</p>
+                <p className="text-slate-600 text-sm font-light leading-relaxed mb-6 italic relative z-10">&quot;{t.text}&quot;</p>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-xs font-bold text-accent">
                     {t.name[0]}
@@ -385,7 +387,7 @@ export default function UserDashboard() {
           <div className="text-center mb-16">
             <p className="text-[10px] font-bold text-accent uppercase tracking-[0.2em] mb-4">The Pipeline</p>
             <h2 className="text-3xl font-semibold mb-3 tracking-tight">On the Horizon</h2>
-            <p className="text-sm text-slate-500 font-light">We're building fast. Here is what is coming next.</p>
+            <p className="text-sm text-slate-500 font-light">We&apos;re building fast. Here is what is coming next.</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {futureFeatures.map((f, i) => (
@@ -413,7 +415,7 @@ export default function UserDashboard() {
             
             <h2 className="text-4xl md:text-6xl font-semibold mb-6 tracking-tight">Stop Waiting.<br/>Start Sharing.</h2>
             <p className="text-slate-400 text-lg font-light mb-12 max-w-xl mx-auto leading-relaxed">
-              You've got something to show. Let the world see it — without a single line of code.
+              You&apos;ve got something to show. Let the world see it — without a single line of code.
             </p>
             
             <Link href="/user/register" className="inline-block button-primary px-12 py-4 bg-white text-slate-900 hover:bg-slate-50 shadow-xl shadow-white/5 text-base rounded-2xl transition-all hover:-translate-y-1">

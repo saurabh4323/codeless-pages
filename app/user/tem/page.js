@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import UserNavbar from "../Header";
 import { Search, Filter, Layout, ArrowRight, Loader2, Info } from "lucide-react";
+import Image from "next/image";
 
 export default function TemplatesGallery() {
   const [templates, setTemplates] = useState([]);
@@ -171,10 +172,11 @@ export default function TemplatesGallery() {
                   >
                     <div className="bg-white rounded-[32px] border border-slate-100 overflow-hidden flex flex-col h-full shadow-sm hover:shadow-xl transition-all duration-500 group">
                       <div className="aspect-[16/10] bg-slate-50 relative overflow-hidden">
-                         <img 
+                         <Image 
                            src={config.img} 
                            alt={template.name} 
-                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-90 group-hover:opacity-100" 
+                           fill
+                           className="object-cover group-hover:scale-105 transition-transform duration-700 opacity-90 group-hover:opacity-100" 
                          />
                          
                          <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-indigo-600/5 transition-colors duration-500" />

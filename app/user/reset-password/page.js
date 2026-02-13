@@ -23,18 +23,7 @@ function ResetPasswordContent() {
   const [isValidToken, setIsValidToken] = useState(false);
   const [tokenLoading, setTokenLoading] = useState(true);
 
-  useEffect(() => {
-    if (!token) {
-      setError("Invalid reset link. Please request a new password reset.");
-      setTokenLoading(false);
-      return;
-    }
-
-    // Validate token
-    validateToken();
-  }, [token]);
-
-  const validateToken = async () => {
+  const validateToken = useCallback(async () => {
     try {
       const response = await axios.post("/api/user/validate-reset-token", {
         token: token,
@@ -50,7 +39,18 @@ function ResetPasswordContent() {
     } finally {
       setTokenLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) {
+      setError("Invalid reset link. Please request a new password reset.");
+      setTokenLoading(false);
+      return;
+    }
+
+    // Validate token
+    validateToken();
+  }, [token, validateToken]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

@@ -39,25 +39,7 @@ export default function ContentUploadPage({ params }) {
   const [userId, setUserId] = useState(null);
   const [usertoken, setUsertoken] = useState(null);
 
-  // Initialize data
-  useEffect(() => {
-    const storedUserId = localStorage.getItem("userid");
-    const storedUsertoken = localStorage.getItem("usertoken");
-    
-    if (storedUserId) {
-      setUserId(storedUserId);
-      setUsertoken(storedUsertoken);
-    } else {
-      router.push("/user/register");
-      return;
-    }
-
-    if (templateId) {
-      fetchTemplateDetails();
-    }
-  }, [templateId]);
-
-  const fetchTemplateDetails = async () => {
+  const fetchTemplateDetails = useCallback(async () => {
     try {
       setLoading(true);
       const userToken = localStorage.getItem("userid");
@@ -81,7 +63,25 @@ export default function ContentUploadPage({ params }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [templateId]);
+
+  // Initialize data
+  useEffect(() => {
+    const storedUserId = localStorage.getItem("userid");
+    const storedUsertoken = localStorage.getItem("usertoken");
+    
+    if (storedUserId) {
+      setUserId(storedUserId);
+      setUsertoken(storedUsertoken);
+    } else {
+      router.push("/user/register");
+      return;
+    }
+
+    if (templateId) {
+      fetchTemplateDetails();
+    }
+  }, [templateId, fetchTemplateDetails, router]);
 
   const handleInputChange = (e, id) => {
     const val = e.target.type === 'file' ? e.target.files[0] : e.target.value;
