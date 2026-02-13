@@ -139,7 +139,7 @@ export default function ModernVideoTestimonialLayout({ previewContent = null }) 
               <div key={i} className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 hover:shadow-2xl transition-all">
                 {renderVideo(t.video?.value)}
                 <div className="p-6">
-                  {t.text && <blockquote className="text-gray-600 italic mb-6">"{t.text.value}"</blockquote>}
+                  {t.text && <blockquote className="text-gray-600 italic mb-6">{t.text.value}</blockquote>}
                   {t.link && (
                     <a href={t.link.value} target="_blank" className="block w-full text-center px-6 py-3 bg-black text-white font-semibold rounded-xl hover:bg-gray-800 transition-all">
                       Click Here to Get Started

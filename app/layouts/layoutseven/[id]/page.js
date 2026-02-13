@@ -144,7 +144,7 @@ export default function GiftPageLayout({ previewContent = null }) {
         <div className="container mx-auto px-6 py-20">
           {texts.map((text, index) => (
             <div key={index} className="bg-white p-8 rounded-3xl shadow-lg mb-12 max-w-4xl mx-auto border border-rose-100 italic text-lg text-gray-700">
-              "{text.value}"
+              {text.value}
             </div>
           ))}
 

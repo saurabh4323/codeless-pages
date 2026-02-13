@@ -124,7 +124,7 @@ export default function AdminHome() {
             Dashboard Overview
           </h1>
           <p className="text-blue-200/60 text-lg">
-            Welcome back, {admin?.name || "Admin"}. Here's what's happening today.
+            Welcome back, {admin?.name || "Admin"}. Here is what is happening today.
           </p>
         </div>
         <div className="flex gap-2">
