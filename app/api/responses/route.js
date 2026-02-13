@@ -33,26 +33,7 @@ export async function GET(request) {
       
       // Build query filters
       if (templateId) query.templateId = templateId;
-      // Accept tenant filter as token or tenant name
-      if (tenantFilter) {
-        try {
-          const tokenDoc = await AdminToken.findOne({
-            $or: [
-              { token: tenantFilter },
-              { tenantName: { $regex: `^${tenantFilter}$`, $options: 'i' } }
-            ]
-          }).lean();
-          if (tokenDoc?.token) {
-            query.tenantToken = tokenDoc.token;
-          } else {
-            query.tenantToken = tenantFilter;
-          }
-        } catch (e) {
-          query.tenantToken = tenantFilter;
-        }
-      }
-      // Filter by contentId directly when provided
-      if (contentId) query.contentId = contentId;
+      if (tenantFilter) query.tenantToken = tenantFilter;
       if (startDate || endDate) {
         query.createdAt = {};
         if (startDate) query.createdAt.$gte = new Date(startDate);
@@ -115,9 +96,14 @@ export async function GET(request) {
       }
     }
     
-    // Fetch all contents to provide full headings list and lookup by id
+    // Fetch all contents to map templateId to content
     const allContents = await Content.find({}).lean();
-    const contentMapById = new Map(allContents.map(c => [c._id.toString(), c]));
+    const templateToContentMap = {};
+    allContents.forEach(content => {
+      if (content.templateId) {
+        templateToContentMap[content.templateId.toString()] = content;
+      }
+    });
     
     // Fetch all admin tokens for tenant names
     const adminTokens = await AdminToken.find({}).lean();
@@ -135,10 +121,8 @@ export async function GET(request) {
             templateId: response.templateId._id || response.templateId 
           }).lean();
           
-          // Get content info by stored contentId, fallback to first content by template
-          const contentInfo = response.contentId
-            ? contentMapById.get(response.contentId.toString())
-            : allContents.find(c => c.templateId && (c.templateId.toString() === ((response.templateId._id || response.templateId).toString())));
+          // Get content info
+          const contentInfo = templateToContentMap[(response.templateId._id || response.templateId).toString()];
           
           // Get tenant name
           const tenantName = tokenMap[response.tenantToken] || response.tenantToken || "Unknown";
@@ -148,21 +132,25 @@ export async function GET(request) {
             const enhancedResponseArray = response.responses?.map((resp, index) => {
               const question = templateQuestions.questions[index];
               
-              // If questionText already exists in response, use it
-              if (resp.questionText) {
-                return {
-                  ...resp,
-                  isCorrect: resp.isCorrect !== undefined 
-                    ? resp.isCorrect 
-                    : question?.options?.find(opt => opt.text === resp.selectedOption)?.isCorrect || false
-                };
+              let selectedOptionText = resp.selectedOption;
+              
+              // Map shorthand (a, b, c, d) to actual option text if necessary
+              const shorthands = ['a', 'b', 'c', 'd', 'e', 'f'];
+              const shorthandIndex = shorthands.indexOf(selectedOptionText?.toLowerCase());
+              
+              if (shorthandIndex !== -1 && question?.options && question.options[shorthandIndex]) {
+                // If the selected option is a shorthand letter and we can find the matching option text
+                selectedOptionText = question.options[shorthandIndex].text;
               }
               
-              // Otherwise, get it from template questions
               return {
                 ...resp,
-                questionText: question?.questionText || "Question not found",
-                isCorrect: question?.options?.find(opt => opt.text === resp.selectedOption)?.isCorrect || false
+                questionText: resp.questionText || question?.questionText || "Question not found",
+                selectedOption: selectedOptionText,
+                originalShorthand: shorthandIndex !== -1 ? resp.selectedOption : null,
+                isCorrect: resp.isCorrect !== undefined 
+                  ? resp.isCorrect 
+                  : question?.options?.find(opt => opt.text === selectedOptionText || opt.text === resp.selectedOption)?.isCorrect || false
               };
             }) || [];
             
@@ -220,12 +208,15 @@ export async function GET(request) {
     // Get unique tenants for filter
     const uniqueTenants = [...new Set(filteredResponses.map(r => r.tenantName))].filter(Boolean).sort();
     
-    // Build contents list for filters using ALL contents
-    const contentsForFilter = allContents.map(c => ({
-      _id: c._id,
-      heading: c.heading,
-      subheading: c.subheading
-    }));
+    // Get unique contents for filter
+    const uniqueContents = [];
+    const contentIds = new Set();
+    filteredResponses.forEach(r => {
+      if (r.contentInfo && !contentIds.has(r.contentInfo._id.toString())) {
+        contentIds.add(r.contentInfo._id.toString());
+        uniqueContents.push(r.contentInfo);
+      }
+    });
     
     // Calculate statistics
     const stats = {
@@ -271,7 +262,7 @@ export async function GET(request) {
       count: filteredResponses?.length || 0,
       filters: {
         tenants: uniqueTenants,
-        contents: contentsForFilter
+        contents: uniqueContents
       },
       stats,
       chartData

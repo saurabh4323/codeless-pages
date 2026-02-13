@@ -56,11 +56,10 @@ const UserNavbar = () => {
   };
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-      isScrolled 
-        ? 'bg-slate-900/95 backdrop-blur-xl shadow-lg border-b border-slate-700/50' 
-        : 'bg-slate-900/80 backdrop-blur-lg border-b border-slate-800/50'
-    }`}>
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
+      ? 'bg-white/95 backdrop-blur-xl shadow-lg border-b border-gray-200'
+      : 'bg-white/80 backdrop-blur-lg border-b border-gray-100'
+      }`}>
       <div className="relative w-full px-6 lg:px-12">
         <div className="flex items-center justify-between h-20">
           {/* Logo - Far Left Side */}
@@ -77,7 +76,7 @@ const UserNavbar = () => {
                   </svg>
                 </div>
               </div>
-              <span className="text-2xl font-bold tracking-tight bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent group-hover:from-blue-400 group-hover:via-indigo-400 group-hover:to-blue-400 transition-all duration-300" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif' }}>
+              <span className="text-2xl font-bold tracking-tight bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent group-hover:from-blue-600 group-hover:via-indigo-600 group-hover:to-blue-600 transition-all duration-300" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif' }}>
                 Codeless
               </span>
             </Link>
@@ -85,7 +84,7 @@ const UserNavbar = () => {
 
           {/* Navigation - Center */}
           <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2">
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center gap-2 lg:gap-4">
               {[
                 { href: "/", label: "Home" },
                 { href: "/user/tem", label: "Templates" },
@@ -96,8 +95,8 @@ const UserNavbar = () => {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="relative px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors duration-200 group"
-                  style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif' }}
+                  className="relative px-3 lg:px-4 py-2 mx-1 text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors duration-200 group"
+                  style={{ fontFamily: 'var(--font-outfit), sans-serif' }}
                 >
                   {item.label}
                   <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 group-hover:w-full transition-all duration-300"></span>
@@ -108,10 +107,10 @@ const UserNavbar = () => {
 
           {/* Auth Section - Far Right Side */}
           <div className="hidden md:block">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center gap-4">
               <button
                 onClick={handleProfileClick}
-                className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-all duration-200"
+                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-lg transition-all duration-200"
                 style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif' }}
               >
                 Profile
@@ -141,7 +140,7 @@ const UserNavbar = () => {
           <div className="md:hidden">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-all duration-200"
+              className="inline-flex items-center justify-center p-2 rounded-lg text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-all duration-200"
             >
               <svg
                 className="h-6 w-6 transition-transform duration-300"
@@ -176,11 +175,10 @@ const UserNavbar = () => {
 
       {/* Mobile menu */}
       <div
-        className={`md:hidden bg-slate-900 border-t border-slate-800/50 transition-all duration-300 ease-in-out ${
-          isMenuOpen
-            ? "max-h-screen opacity-100 visible shadow-lg"
-            : "max-h-0 opacity-0 invisible"
-        }`}
+        className={`md:hidden bg-white border-t border-gray-100 transition-all duration-300 ease-in-out ${isMenuOpen
+          ? "max-h-screen opacity-100 visible shadow-lg"
+          : "max-h-0 opacity-0 invisible"
+          }`}
       >
         <div className="px-6 pt-4 pb-6 space-y-2">
           {[
@@ -204,7 +202,7 @@ const UserNavbar = () => {
               : { href: "/user/register", label: "Get Started", isRegister: true },
           ].map((item, index) => (
             <div
-              key={item.href}
+              key={index}
               style={{
                 animationDelay: `${index * 50}ms`,
                 animation: isMenuOpen
@@ -215,11 +213,10 @@ const UserNavbar = () => {
               {item.onClick ? (
                 <button
                   onClick={item.onClick}
-                  className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    item.isLogout
-                      ? "text-red-400 bg-red-950/50 hover:bg-red-950/70"
-                      : "text-slate-300 hover:text-white hover:bg-slate-800"
-                  }`}
+                  className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${item.isLogout
+                    ? "text-red-600 bg-red-50 hover:bg-red-100"
+                    : "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+                    }`}
                   style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif' }}
                 >
                   {item.label}
@@ -227,11 +224,10 @@ const UserNavbar = () => {
               ) : (
                 <Link
                   href={item.href}
-                  className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    item.isRegister
-                      ? "text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-                      : "text-slate-300 hover:text-white hover:bg-slate-800"
-                  }`}
+                  className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${item.isRegister
+                    ? "text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                    : "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+                    }`}
                   style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif' }}
                   onClick={() => setIsMenuOpen(false)}
                 >

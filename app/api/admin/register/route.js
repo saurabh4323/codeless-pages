@@ -5,10 +5,18 @@ import { NextResponse } from "next/server";
 
 export async function POST(request) {
   try {
-    const { name, email, password, adminToken } = await request.json();
+    const { name, email, password, adminToken, phone } = await request.json();
 
     // Connect to the database
     await connectDB();
+
+    // Validate required fields
+    if (!name || !email || !password || !phone) {
+      return NextResponse.json(
+        { message: "Name, email, password, and phone are required" },
+        { status: 400 }
+      );
+    }
 
     // Validate admin token
     if (!adminToken) {
@@ -44,6 +52,7 @@ export async function POST(request) {
     // Create new admin user with tenant token
     const admin = new Admin({
       name,
+      phone,
       email,
       password, // Store the password as-is (no hashing)
       tenantToken: tokenData.token, // Store the tenant token

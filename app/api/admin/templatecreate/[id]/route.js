@@ -6,7 +6,7 @@ import mongoose from "mongoose";
 // GET handler - Get a specific template by ID
 export async function GET(request, context) {
   try {
-    const id = context.params.id;
+    const { id } = await context.params;
 
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -25,7 +25,14 @@ export async function GET(request, context) {
       return NextResponse.json({ success: false, message: "Missing admin token" }, { status: 401 });
     }
 
-    const template = await Template.findOne({ _id: id, tenantToken });
+    const template = await Template.findOne({ 
+      _id: id, 
+      $or: [
+        { tenantToken: tenantToken },
+        { tenantToken: { $exists: false } },
+        { tenantToken: null }
+      ]
+    });
 
     if (!template) {
       return NextResponse.json(
@@ -42,7 +49,7 @@ export async function GET(request, context) {
     });
   } catch (error) {
     console.error(
-      `Error fetching template with ID ${context.params.id}:`,
+      `Error fetching template with ID ${id}:`,
       error
     );
     return NextResponse.json(
@@ -59,7 +66,7 @@ export async function GET(request, context) {
 // PUT handler - Update a specific template by ID
 export async function PUT(request, context) {
   try {
-    const id = context.params.id;
+    const { id } = await context.params;
     const updateData = await request.json();
     console.log("Update Data:", updateData);
 
@@ -79,7 +86,14 @@ export async function PUT(request, context) {
     if (!tenantToken) {
       return NextResponse.json({ success: false, message: "Missing admin token" }, { status: 401 });
     }
-    const existingTemplate = await Template.findOne({ _id: id, tenantToken });
+    const existingTemplate = await Template.findOne({ 
+      _id: id, 
+      $or: [
+        { tenantToken: tenantToken },
+        { tenantToken: { $exists: false } },
+        { tenantToken: null }
+      ]
+    });
 
     if (!existingTemplate) {
       return NextResponse.json(
@@ -100,7 +114,14 @@ export async function PUT(request, context) {
 
     // Update the template with new data and return the updated document
     const updatedTemplate = await Template.findOneAndUpdate(
-      { _id: id, tenantToken },
+      { 
+        _id: id, 
+        $or: [
+          { tenantToken: tenantToken },
+          { tenantToken: { $exists: false } },
+          { tenantToken: null }
+        ]
+      },
       { $set: updateData },
       { new: true, runValidators: true }
     ).populate("createdBy updatedBy", "name email");
@@ -112,7 +133,7 @@ export async function PUT(request, context) {
     });
   } catch (error) {
     console.error(
-      `Error updating template with ID ${context.params.id}:`,
+      `Error updating template with ID ${id}:`,
       error
     );
     return NextResponse.json(
@@ -129,7 +150,7 @@ export async function PUT(request, context) {
 // DELETE handler - Delete a specific template by ID
 export async function DELETE(request, context) {
   try {
-    const id = context.params.id;
+    const { id } = await context.params;
 
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -147,7 +168,14 @@ export async function DELETE(request, context) {
     if (!tenantToken) {
       return NextResponse.json({ success: false, message: "Missing admin token" }, { status: 401 });
     }
-    const deletedTemplate = await Template.findOneAndDelete({ _id: id, tenantToken });
+    const deletedTemplate = await Template.findOneAndDelete({ 
+      _id: id, 
+      $or: [
+        { tenantToken: tenantToken },
+        { tenantToken: { $exists: false } },
+        { tenantToken: null }
+      ]
+    });
 
     if (!deletedTemplate) {
       return NextResponse.json(
@@ -163,7 +191,7 @@ export async function DELETE(request, context) {
     });
   } catch (error) {
     console.error(
-      `Error deleting template with ID ${context.params.id}:`,
+      `Error deleting template with ID ${id}:`,
       error
     );
     return NextResponse.json(

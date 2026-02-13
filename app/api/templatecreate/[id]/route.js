@@ -6,7 +6,7 @@ import mongoose from "mongoose";
 // GET handler - Get a specific template by ID
 export async function GET(request, context) {
   try {
-    const id = context.params.id;
+    const { id } = await context.params;
 
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -33,8 +33,15 @@ export async function GET(request, context) {
     let template;
     
     if (adminToken) {
-      // Admin access - find by tenant token
-      template = await Template.findOne({ _id: id, tenantToken });
+      // Admin access - find by tenant token or legacy templates
+      template = await Template.findOne({ 
+        _id: id, 
+        $or: [
+          { tenantToken: tenantToken },
+          { tenantToken: { $exists: false } },
+          { tenantToken: null }
+        ]
+      });
     } else {
       // User access - find by tenant token (using user token) but only published templates
       template = await Template.findOne({ 
@@ -63,7 +70,7 @@ export async function GET(request, context) {
     });
   } catch (error) {
     console.error(
-      `Error fetching template with ID ${context.params.id}:`,
+      `Error fetching template with ID ${id}:`,
       error
     );
     return NextResponse.json(
@@ -80,7 +87,7 @@ export async function GET(request, context) {
 // PUT handler - Update a specific template by ID
 export async function PUT(request, context) {
   try {
-    const id = context.params.id;
+    const { id } = await context.params;
     const updateData = await request.json();
     console.log("Update Data:", updateData);
 
@@ -103,7 +110,14 @@ export async function PUT(request, context) {
     
     if (tenantToken) {
       // Admin access
-      existingTemplate = await Template.findOne({ _id: id, tenantToken });
+      existingTemplate = await Template.findOne({ 
+        _id: id, 
+        $or: [
+          { tenantToken: tenantToken },
+          { tenantToken: { $exists: false } },
+          { tenantToken: null }
+        ]
+      });
     } else if (userToken) {
       // User access - users can only update their own templates
       existingTemplate = await Template.findOne({ _id: id, userToken });
@@ -130,7 +144,14 @@ export async function PUT(request, context) {
 
     // Update the template with new data and return the updated document
     const updatedTemplate = await Template.findOneAndUpdate(
-      { _id: id, tenantToken },
+      { 
+        _id: id, 
+        $or: [
+          { tenantToken: tenantToken },
+          { tenantToken: { $exists: false } },
+          { tenantToken: null }
+        ]
+      },
       { $set: updateData },
       { new: true, runValidators: true }
     ).populate("createdBy updatedBy", "name email");
@@ -142,7 +163,7 @@ export async function PUT(request, context) {
     });
   } catch (error) {
     console.error(
-      `Error updating template with ID ${context.params.id}:`,
+      `Error updating template with ID ${id}:`,
       error
     );
     return NextResponse.json(
@@ -159,7 +180,7 @@ export async function PUT(request, context) {
 // DELETE handler - Delete a specific template by ID
 export async function DELETE(request, context) {
   try {
-    const id = context.params.id;
+    const { id } = await context.params;
 
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -180,7 +201,14 @@ export async function DELETE(request, context) {
     
     if (tenantToken) {
       // Admin access
-      deletedTemplate = await Template.findOneAndDelete({ _id: id, tenantToken });
+      deletedTemplate = await Template.findOneAndDelete({ 
+        _id: id, 
+        $or: [
+          { tenantToken: tenantToken },
+          { tenantToken: { $exists: false } },
+          { tenantToken: null }
+        ]
+      });
     } else if (userToken) {
       // User access - users can only delete their own templates
       deletedTemplate = await Template.findOneAndDelete({ _id: id, userToken });
@@ -202,7 +230,7 @@ export async function DELETE(request, context) {
     });
   } catch (error) {
     console.error(
-      `Error deleting template with ID ${context.params.id}:`,
+      `Error deleting template with ID ${id}:`,
       error
     );
     return NextResponse.json(

@@ -3,23 +3,25 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import DynamicPopup from "@/app/components/DynamicPopup";
 
-export default function ModernImageGallery() {
-  // ========== CONFIGURATION ==========
-  const TEMPLATE_NAME = "Testimonial Images"; // Change this to match your template name
-  // ===================================
+const TEMPLATE_NAME = "Testimonial Images";
 
-  const [content, setContent] = useState(null);
-  const [loading, setLoading] = useState(true);
+export default function ModernImageGallery({ previewContent = null }) {
+  const [dbContent, setDbContent] = useState(null);
+  const [loading, setLoading] = useState(!previewContent);
   const [error, setError] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
   const params = useParams();
-  const router = useRouter();
   const id = params?.id;
-  
-  // Get template ID from content data
+
+  const content = previewContent || dbContent;
   const templateId = content?.templateId?._id || content?.templateId;
 
   useEffect(() => {
+    if (previewContent) {
+      setLoading(false);
+      return;
+    }
+
     if (!id) {
       setError("No content ID provided");
       setLoading(false);
@@ -29,87 +31,51 @@ export default function ModernImageGallery() {
     const fetchData = async () => {
       try {
         setLoading(true);
-
-        // Step 1: Fetch templates
-        console.log("Fetching templates from /api/admin/templatecreate...");
         const templateResponse = await fetch("/api/admin/templatecreate");
-        console.log("Template Response Status:", templateResponse.status);
         const templateData = await templateResponse.json();
-        console.log("Template Data:", templateData);
 
         if (!templateData.success) {
           throw new Error("Failed to fetch templates");
         }
 
-        console.log("Templates List:", templateData.data);
-
-        // Step 2: Find the specified template
-        console.log(`Searching for template named '${TEMPLATE_NAME}'...`);
-        const imageGalleryTemplate = templateData.data.find((template) => {
-          console.log(
-            `Comparing template name: "${template.name}" with "${TEMPLATE_NAME}"`
-          );
-          return template.name === TEMPLATE_NAME;
-        });
+        const imageGalleryTemplate = templateData.data.find(
+          (template) => template.name === TEMPLATE_NAME
+        );
 
         if (!imageGalleryTemplate) {
-          console.log(`Template '${TEMPLATE_NAME}' not found in the data.`);
           throw new Error(`Template '${TEMPLATE_NAME}' not found`);
         }
 
-        console.log("Found Template:", imageGalleryTemplate);
         const templateId = imageGalleryTemplate._id;
-        console.log("Template ID:", templateId);
-
-        // Step 3: Fetch content by ID
-        console.log(`Fetching content for ID: ${id}`);
-        const contentResponse = await fetch(`/api/upload`);
-        console.log("Content Response Status:", contentResponse.status);
+        const contentResponse = await fetch("/api/upload");
         const contentData = await contentResponse.json();
-        console.log("Content Data:", contentData);
 
         if (!contentData.success) {
           throw new Error("Failed to fetch content");
         }
 
-        console.log("All Content Entries:", contentData.content);
-
-        // Step 4: Find content matching the provided ID and templateId
         const matchedContent = contentData.content.find((content) => {
-          if (!content.templateId || content.templateId === null) {
-            console.log(
-              `Content ID: ${content._id}, Template ID: null, Matches: false`
-            );
-            return false;
-          }
-
-          const contentTemplateId = content.templateId._id;
-          const matches =
-            content._id === id &&
-            contentTemplateId.toString() === templateId.toString();
-          console.log(
-            `Content ID: ${content._id}, Template ID: ${contentTemplateId}, Matches: ${matches}`
-          );
-          return matches;
+          const contentTemplateId = content.templateId?._id || content.templateId;
+          const matchesId = content._id === id;
+          const matchesTemplate = contentTemplateId?.toString() === templateId.toString();
+          return matchesId && matchesTemplate;
         });
 
         if (!matchedContent) {
-          console.log(`Content with ID '${id}' not found for template.`);
           throw new Error("Content not found for this ID");
         }
 
-        console.log("Matched Content:", matchedContent);
-        setContent(matchedContent);
+        setDbContent(matchedContent);
       } catch (err) {
         console.error("Error fetching data:", err);
-        setError(err.message || "Failed to fetch data");
+        setError(err.message || "Failed to load content");
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [id]);
+  }, [id, previewContent]);
 
   // Helper function to extract images from sections
   const extractImages = (sections) => {
@@ -123,16 +89,6 @@ export default function ModernImageGallery() {
       });
     }
     return images;
-  };
-
-  // Helper function to format dates
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
   };
 
   const openImageModal = (imageUrl) => {
@@ -214,7 +170,6 @@ export default function ModernImageGallery() {
       <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-900 to-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="group">
-            {/* Collection Header */}
             <div className="mb-8 text-center">
               <h2 className="text-3xl font-bold text-white mb-2 group-hover:bg-gradient-to-r group-hover:from-cyan-400 group-hover:to-purple-400 group-hover:bg-clip-text group-hover:text-transparent transition-all duration-300">
                 {content.heading}
@@ -222,41 +177,6 @@ export default function ModernImageGallery() {
               <p className="text-slate-400 text-lg max-w-2xl mx-auto">
                 {content.subheading}
               </p>
-              {/* <div className="mt-4 flex items-center justify-center space-x-4 text-sm text-slate-500"> */}
-              {/* <span className="flex items-center">
-                  <svg
-                    className="w-4 h-4 mr-1"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
-                  {formatDate(content.createdAt)}
-                </span> */}
-              {/* <span className="w-1 h-1 bg-slate-500 rounded-full"></span> */}
-              {/* <span className="flex items-center">
-                  <svg
-                    className="w-4 h-4 mr-1"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
-                  {images.length} Images
-                </span> */}
-              {/* </div> */}
             </div>
 
             {/* Images Grid */}
@@ -275,9 +195,7 @@ export default function ModernImageGallery() {
                         className="w-full h-full object-cover group-hover/image:scale-110 transition-transform duration-700"
                         loading="lazy"
                       />
-                      {/* Gradient Overlay */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/image:opacity-100 transition-opacity duration-300"></div>
-                      {/* Hover Content */}
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/image:opacity-100 transition-opacity duration-300">
                         <div className="bg-white/20 backdrop-blur-sm rounded-full p-4 transform scale-75 group-hover/image:scale-100 transition-transform duration-300">
                           <svg
@@ -295,12 +213,9 @@ export default function ModernImageGallery() {
                           </svg>
                         </div>
                       </div>
-                      {/* Image Number Badge */}
                       <div className="absolute top-4 left-4 bg-gradient-to-r from-cyan-500/80 to-purple-500/80 backdrop-blur-sm text-white text-xs font-bold px-3 py-1 rounded-full border border-white/20">
                         {imageIndex + 1}
                       </div>
-                      {/* Shimmer Effect */}
-                      <div className="absolute inset-0 -translate-x-full group-hover/image:translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-1000 ease-out"></div>
                     </div>
                   </div>
                 ))}
@@ -310,7 +225,6 @@ export default function ModernImageGallery() {
         </div>
       </div>
 
-      {/* Full Screen Image Modal */}
       {selectedImage && (
         <div
           className="fixed inset-0 bg-black/95 backdrop-blur-xl z-50 flex items-center justify-center p-4"

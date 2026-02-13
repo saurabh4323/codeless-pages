@@ -41,7 +41,7 @@ export async function GET(request) {
           { tenantToken: { $exists: false } },
           { tenantToken: null }
         ]
-      });
+      }).sort({ createdAt: 1 });
     }
 
     return NextResponse.json({

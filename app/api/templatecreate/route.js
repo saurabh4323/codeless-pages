@@ -46,7 +46,7 @@ export async function GET(request) {
           { tenantToken: { $exists: false } },
           { tenantToken: null }
         ]
-      });
+      }).sort({ createdAt: 1 });
     } else {
       // User access - find published templates only
       templates = await Template.find({
@@ -57,7 +57,7 @@ export async function GET(request) {
           { tenantToken: { $exists: false } },
           { tenantToken: null }
         ]
-      });
+      }).sort({ createdAt: 1 });
     }
 
     return NextResponse.json({

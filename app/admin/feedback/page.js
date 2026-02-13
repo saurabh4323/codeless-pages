@@ -1,10 +1,9 @@
 "use client";
-
 import { useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import { Send, FileText, Edit, PlusCircle } from "lucide-react";
-import AdminNavbar from "../Navbar";
+import { Send, FileText, CheckCircle, PlusCircle, AlertCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function AdminFeedback() {
   const [formData, setFormData] = useState({
@@ -16,7 +15,6 @@ export default function AdminFeedback() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
-
   const router = useRouter();
 
   const handleChange = (e) => {
@@ -31,16 +29,15 @@ export default function AdminFeedback() {
     setSuccess("");
 
     try {
-      const response = await axios.post("/api/feedback", {
+      await axios.post("/api/feedback", {
         adminid: localStorage.getItem("adminToken"),
         topic: formData.topic,
         changes: formData.changes,
         updates: formData.updates,
         feedback: formData.feedback,
       });
-      console.log("Feedback response:", response.data); // Debug log
 
-      setSuccess("Feedback submitted successfully!");
+      setSuccess("Report submitted successfully!");
       setFormData({
         topic: "",
         changes: "",
@@ -52,8 +49,7 @@ export default function AdminFeedback() {
       }, 2000);
     } catch (err) {
       setError(
-        err.response?.data?.message ||
-          "Failed to submit feedback. Please try again."
+        err.response?.data?.message || "Failed to submit report. Please try again."
       );
     } finally {
       setLoading(false);
@@ -61,143 +57,113 @@ export default function AdminFeedback() {
   };
 
   return (
-    <>
-      <AdminNavbar />
-      <div
-        className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-gray-800"
-        style={{ padding: "20px" }}
-      >
-        <div className="bg-gray-900 p-12 rounded-2xl shadow-2xl w-full max-w-3xl transform transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]">
-          <h1 className="text-4xl font-bold text-center text-white mb-10 flex items-center justify-center gap-3 font-sans">
-            <FileText className="w-9 h-9 animate-pulse" />
-            Daily Admin Feedback
-          </h1>
-
-          {/* Error and Success Messages */}
-          {error && (
-            <div className="bg-red-900/80 border border-red-700 text-red-100 px-5 py-4 rounded-lg mb-8 animate-fade-in">
-              {error}
-            </div>
-          )}
-          {success && (
-            <div className="bg-green-900/80 border border-green-700 text-green-100 px-5 py-4 rounded-lg mb-8 animate-fade-in">
-              {success}
-            </div>
-          )}
-
-          {/* Feedback Form */}
-          <form onSubmit={handleSubmit}>
-            <div className="mb-8">
-              <label
-                className="block text-gray-200 text-sm font-semibold mb-3 flex items-center gap-2"
-                htmlFor="topic"
-              >
-                <Edit className="w-5 h-5 text-white transition-transform duration-200 hover:scale-110" />
-                Topic
-              </label>
-              <input
-                type="text"
-                id="topic"
-                name="topic"
-                value={formData.topic}
-                onChange={handleChange}
-                className="w-full px-5 py-3 bg-gray-800 text-white border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50 transition-all duration-200 hover:bg-gray-700"
-                required
-                placeholder="Enter the topic of today's work"
-              />
-            </div>
-
-            <div className="mb-8">
-              <label
-                className="block text-gray-200 text-sm font-semibold mb-3 flex items-center gap-2"
-                htmlFor="changes"
-              >
-                <Edit className="w-5 h-5 text-white transition-transform duration-200 hover:scale-110" />
-                Changes Made
-              </label>
-              <textarea
-                id="changes"
-                name="changes"
-                value={formData.changes}
-                onChange={handleChange}
-                className="w-full px-5 py-3 bg-gray-800 text-white border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50 transition-all duration-200 hover:bg-gray-700"
-                required
-                placeholder="Describe any changes implemented today"
-                rows="5"
-              />
-            </div>
-
-            <div className="mb-8">
-              <label
-                className="block text-gray-200 text-sm font-semibold mb-3 flex items-center gap-2"
-                htmlFor="updates"
-              >
-                <PlusCircle className="w-5 h-5 text-white transition-transform duration-200 hover:scale-110" />
-                New Updates
-              </label>
-              <textarea
-                id="updates"
-                name="updates"
-                value={formData.updates}
-                onChange={handleChange}
-                className="w-full px-5 py-3 bg-gray-800 text-white border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50 transition-all duration-200 hover:bg-gray-700"
-                required
-                placeholder="List any new updates or features added"
-                rows="5"
-              />
-            </div>
-
-            <div className="mb-10">
-              <label
-                className="block text-gray-200 text-sm font-semibold mb-3 flex items-center gap-2"
-                htmlFor="feedback"
-              >
-                <FileText className="w-5 h-5 text-white transition-transform duration-200 hover:scale-110" />
-                General Feedback
-              </label>
-              <textarea
-                id="feedback"
-                name="feedback"
-                value={formData.feedback}
-                onChange={handleChange}
-                className="w-full px-5 py-3 bg-gray-800 text-white border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50 transition-all duration-200 hover:bg-gray-700"
-                placeholder="Share any additional feedback or notes"
-                rows="5"
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="w-full bg-white text-black font-semibold py-4 px-6 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-900 transition-all duration-300 flex items-center justify-center gap-3 transform hover:scale-105"
-              disabled={loading}
-            >
-              {loading ? (
-                "Submitting..."
-              ) : (
-                <>
-                  <Send className="w-5 h-5 animate-bounce" />
-                  Submit Feedback
-                </>
-              )}
-            </button>
-          </form>
-        </div>
+    <div className="max-w-4xl mx-auto space-y-8">
+      {/* Header */}
+      <div className="text-center mb-10">
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-blue-500/30 rotate-3"
+        >
+          <FileText className="w-8 h-8 text-white" />
+        </motion.div>
+        <h1 className="text-3xl font-bold text-white mb-2">Daily Admin Report</h1>
+        <p className="text-gray-400">Submit your daily progress and system updates</p>
       </div>
-      <style jsx>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-fade-in {
-          animation: fadeIn 0.3s ease-out;
-        }
-      `}</style>
-    </>
+
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="bg-red-500/10 border border-red-500/20 text-red-200 px-6 py-4 rounded-xl flex items-center gap-3"
+          >
+            <AlertCircle className="w-5 h-5" />
+            {error}
+          </motion.div>
+        )}
+        {success && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="bg-green-500/10 border border-green-500/20 text-green-200 px-6 py-4 rounded-xl flex items-center gap-3"
+          >
+            <CheckCircle className="w-5 h-5" />
+            {success}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="group"
+          >
+            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Report Topic</label>
+            <input
+              type="text"
+              name="topic"
+              value={formData.topic}
+              onChange={handleChange}
+              className="w-full px-4 py-3 bg-[#1e1b4b]/50 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+              required
+              placeholder="e.g. User Module Refactoring"
+            />
+          </motion.div>
+
+          {/* Spacer or another small field could go here */}
+        </div>
+
+        {[
+          { label: "Changes Implemented", name: "changes", placeholder: "Detail the code changes or refactoring done today..." },
+          { label: "New Updates / Features", name: "updates", placeholder: "List any new features added to the platform..." },
+          { label: "General Feedback / Notes", name: "feedback", placeholder: "Any blockers, suggestions, or additional notes..." }
+        ].map((field, i) => (
+          <motion.div
+            key={field.name}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+            className="group"
+          >
+             <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{field.label}</label>
+             <textarea
+               name={field.name}
+               value={formData[field.name]}
+               onChange={handleChange}
+               className="w-full px-4 py-3 bg-[#1e1b4b]/50 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all min-h-[120px] resize-none"
+               required={field.name !== 'feedback'}
+               placeholder={field.placeholder}
+             />
+          </motion.div>
+        ))}
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="pt-4"
+        >
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <>
+                <Send className="w-5 h-5 group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform" />
+                Submit Daily Report
+              </>
+            )}
+          </button>
+        </motion.div>
+      </form>
+    </div>
   );
 }

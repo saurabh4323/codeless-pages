@@ -50,38 +50,6 @@ export async function POST(request) {
     });
 
     await newToken.save();
-    // Send email to the provided admin email with tenant details and token
-    try {
-      const emailEndpoint = new URL('/api/email', request.url).toString();
-      const subject = `Tenant Token Created - ${tenantName}`;
-      const message = `
-        <div style="font-family: Arial, sans-serif; max-width: 640px; margin:0 auto;">
-          <h2 style="color:#111">Tenant Token Generated</h2>
-          <p><strong>Tenant Name:</strong> ${tenantName}</p>
-          <p><strong>Tenant Token:</strong> <code>${token}</code></p>
-          ${newToken.expiresAt ? `<p><strong>Expires At:</strong> ${newToken.expiresAt.toISOString()}</p>` : ''}
-          <p style="margin-top:16px">Use this token in your admin setup to manage your tenant’s content and responses.</p>
-        </div>
-      `;
-
-      const emailRes = await fetch(emailEndpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: adminEmail,
-          subject,
-          message,
-          fromName: 'Super Admin'
-        })
-      });
-
-      if (!emailRes.ok) {
-        console.warn('Failed to send tenant token email to admin');
-      }
-    } catch (emailErr) {
-      console.error('Error while emailing tenant token:', emailErr);
-      // Do not fail token creation due to email errors
-    }
 
     return NextResponse.json({
       success: true,
@@ -135,4 +103,4 @@ export async function DELETE(request) {
       { status: 500 }
     );
   }
-}
+} 

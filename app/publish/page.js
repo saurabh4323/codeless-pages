@@ -1,336 +1,302 @@
-// Your Published Content Page
 "use client";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import UserNavbar from "../user/Header";
 import Link from "next/link";
 import {
-  ArrowRight,
+  ArrowLeft,
   Layout,
-  CreditCard,
-  Heart,
-  Image,
-  MessageSquare,
-  Package,
-  Gift,
-  Video,
-  CheckCircle,
-  FileText,
-  BookPlus,
+  ArrowRight,
+  Loader2,
+  Plus,
+  Search,
   Eye,
+  Edit2,
+  MoreVertical,
   Share2,
-  Edit,
+  LayoutGrid,
+  History,
+  Info
 } from "lucide-react";
 
-// Your Published Content Templates
-const templates = [
-  {
-    name: "Landing Page",
-    description: "A sleek page to capture leads and drive conversions.",
-    redirect: "/layouts/layoutone",
-    color: "from-emerald-500 to-teal-600",
-    bgColor: "bg-emerald-500/10",
-    iconColor: "text-emerald-400",
-    icon: Layout,
-    type: "marketing",
-    usageCount: 1250,
-    views: 5420,
-    publishedDate: "2024-01-15",
-  },
-  {
-    name: "Payment Page",
-    description: "Showcase your pricing tiers with stunning visuals.",
-    redirect: "/layouts/layouttwo",
-    color: "from-rose-500 to-pink-600",
-    bgColor: "bg-rose-500/10",
-    iconColor: "text-rose-400",
-    icon: CreditCard,
-    type: "commerce",
-    usageCount: 890,
-    views: 3840,
-    publishedDate: "2024-01-20",
-  },
-  {
-    name: "Thank You Page",
-    description: "Thank you greeting message for completed actions.",
-    redirect: "/layouts/layoutthree",
-    color: "from-amber-500 to-orange-600",
-    bgColor: "bg-amber-500/10",
-    iconColor: "text-amber-400",
-    icon: Heart,
-    type: "conversion",
-    usageCount: 670,
-    views: 2890,
-    publishedDate: "2024-01-25",
-  },
-  {
-    name: "Testimonial Image",
-    description: "Display customer testimonials to build trust.",
-    redirect: "/layouts/layoutfour",
-    color: "from-violet-500 to-purple-600",
-    bgColor: "bg-violet-500/10",
-    iconColor: "text-violet-400",
-    icon: Image,
-    type: "social proof",
-    usageCount: 540,
-    views: 2150,
-    publishedDate: "2024-02-01",
-  },
-  {
-    name: "Testimonial",
-    description: "Encourage users to subscribe to your newsletter.",
-    redirect: "/acordial/publish",
-    color: "from-cyan-500 to-blue-600",
-    bgColor: "bg-cyan-500/10",
-    iconColor: "text-cyan-400",
-    icon: MessageSquare,
-    type: "social proof",
-    usageCount: 430,
-    views: 1780,
-    publishedDate: "2024-02-05",
-  },
-  {
-    name: "All Products",
-    description: "Advertise your upcoming event with style.",
-    redirect: "/layouts/layoutsix",
-    color: "from-indigo-500 to-blue-600",
-    bgColor: "bg-indigo-500/10",
-    iconColor: "text-indigo-400",
-    icon: Package,
-    type: "catalog",
-    usageCount: 720,
-    views: 3120,
-    publishedDate: "2024-02-10",
-  },
-  {
-    name: "Gift Page",
-    description: "Showcase your best gifts in a professional layout.",
-    redirect: "/layouts/layoutseven",
-    color: "from-pink-500 to-rose-600",
-    bgColor: "bg-pink-500/10",
-    iconColor: "text-pink-400",
-    icon: Gift,
-    type: "promotion",
-    usageCount: 380,
-    views: 1650,
-    publishedDate: "2024-02-15",
-  },
-  {
-    name: "Video Testimonial",
-    description: "Present detailed case studies to build credibility.",
-    redirect: "/layouts/layouteight",
-    color: "from-sky-500 to-cyan-600",
-    bgColor: "bg-sky-500/10",
-    iconColor: "text-sky-400",
-    icon: Video,
-    type: "social proof",
-    usageCount: 290,
-    views: 1280,
-    publishedDate: "2024-02-20",
-  },
-  {
-    name: "Main Thank You",
-    description: "Display customer testimonials to boost trust.",
-    redirect: "/layouts/layoutnine",
-    color: "from-green-500 to-emerald-600",
-    bgColor: "bg-green-500/10",
-    iconColor: "text-green-400",
-    icon: CheckCircle,
-    type: "conversion",
-    usageCount: 510,
-    views: 2210,
-    publishedDate: "2024-02-25",
-  },
-  {
-    name: "Basic",
-    description: "Showcase your pricing tiers with clarity.",
-    redirect: "/layouts/layoutten",
-    color: "from-orange-500 to-amber-600",
-    bgColor: "bg-orange-500/10",
-    iconColor: "text-orange-400",
-    icon: FileText,
-    type: "basic",
-    usageCount: 820,
-    views: 3560,
-    publishedDate: "2024-03-01",
-  },
-  {
-    name: "Form",
-    description: "Highlight your latest blog posts to engage readers.",
-    redirect: "/layouts/layouteleven",
-    color: "from-blue-500 to-indigo-600",
-    bgColor: "bg-blue-500/10",
-    iconColor: "text-blue-400",
-    icon: BookPlus,
-    type: "lead capture",
-    usageCount: 640,
-    views: 2780,
-    publishedDate: "2024-03-05",
-  },
-];
-
-// Animation variants for cards
-const cardVariants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, ease: "easeOut" },
-  },
-  exit: { opacity: 0, y: -30, transition: { duration: 0.4 } },
+const LAYOUT_MAPPING = {
+  "Landing page": "layoutone",
+  "Payment Page": "layouttwo",
+  "Thankyou Page": "layoutthree",
+  "Testimonial Images": "layoutfour",
+  "Testimonial Section": "layoutfive",
+  "All Products": "layoutsix",
+  "Gift Page": "layoutseven",
+  "Video Testimonial": "layouteight",
+  "MainThankyou Page": "layoutnine",
+  "Basic": "layoutten",
+  "form": "layouteleven"
 };
 
 export default function YourPublishedContent() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [templates, setTemplates] = useState([]);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [userPages, setUserPages] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter();
+
+  useEffect(() => {
+    fetchTemplates();
+  }, []);
+
+  const fetchTemplates = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("/api/templatecreate", {
+        headers: { "status": "published" } // Logic to only get published blueprints
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error("Failed to fetch templates");
+      setTemplates(data.data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchUserPagesForTemplate = async (template) => {
+    try {
+      setLoading(true);
+      const userId = localStorage.getItem("userid");
+      
+      let endpoint = "/api/upload";
+      if (template.name === "Testimonial Section") {
+        endpoint = "/api/acordial/create";
+      }
+
+      const response = await fetch(`${endpoint}?userId=${userId}`);
+      const data = await response.json();
+      
+      if (!data.success) throw new Error("Failed to fetch pages");
+      
+      // Filter strictly by templateId AND createdBy user
+      const pages = endpoint === "/api/upload" 
+        ? (data.content || []).filter(p => 
+            String(p.templateId?._id || p.templateId) === String(template._id) && 
+            String(p.createdBy) === String(userId)
+          )
+        : (data.data || []).filter(p => 
+            String(p.createdBy) === String(userId)
+          );
+
+      setUserPages(pages);
+      setSelectedTemplate(template);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEdit = (page) => {
+    if (selectedTemplate.name === "Testimonial Section") {
+       router.push(`/acordial/edit/${page._id}`);
+    } else {
+       router.push(`/edit/${page._id}`);
+    }
+  };
+
+  const handleView = (page) => {
+    if (selectedTemplate.name === "Testimonial Section") {
+       window.open(`/acordial/view/${page._id}`, '_blank');
+    } else {
+       const layoutFolder = LAYOUT_MAPPING[selectedTemplate.name] || "layoutone";
+       window.open(`/layouts/${layoutFolder}/${page._id}`, '_blank');
+    }
+  };
+
+  const handleShare = (page) => {
+    const layoutFolder = LAYOUT_MAPPING[selectedTemplate.name] || "layoutone";
+    const url = `${window.location.origin}/layouts/${layoutFolder}/${page._id}`;
+    navigator.clipboard.writeText(url);
+    alert("Link copied to clipboard!");
+  };
+
+  const getTemplateConfig = (name) => {
+    const config = {
+      "Landing page": { img: "/landing_template.png" },
+      "Payment Page": { img: "/payment_template.png" },
+      "Thankyou Page": { img: "/thankyou_template.png" },
+      "Testimonial Images": { img: "/templates_v2.png" },
+      "Testimonial Section": { img: "/templates_v2.png" },
+      "All Products": { img: "/landing_template.png" },
+      "Gift Page": { img: "/payment_template.png" },
+      "Video Testimonial": { img: "/codeless_v2.png" },
+      "MainThankyou Page": { img: "/thankyou_template.png" },
+      "Basic": { img: "/codeless_v2.png" },
+    };
+    return config[name] || { img: "/templates_v2.png" };
+  };
+
   return (
-    <>
+    <div className="min-h-screen bg-white font-outfit">
       <UserNavbar />
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          {/* Back Link */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="mb-10"
-          >
-            <Link
-              href="/"
-              className="inline-flex items-center text-emerald-400 hover:text-emerald-300 font-semibold transition-colors duration-200"
-            >
-              <svg
-                className="w-5 h-5 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+      
+      <main className="pt-32 pb-20 px-6 max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
+          <div>
+            {selectedTemplate && (
+              <button 
+                onClick={() => setSelectedTemplate(null)}
+                className="flex items-center gap-2 text-slate-400 hover:text-black font-semibold text-xs mb-6 transition-colors group uppercase tracking-widest"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-              Back to Dashboard
-            </Link>
-          </motion.div>
-
-          {/* Title */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-12"
-          >
-            <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-200 via-white to-cyan-200 mb-4">
-              Your Published Content
+                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Templates
+              </button>
+            )}
+            <h1 className="text-4xl md:text-5xl font-bold text-slate-900 tracking-tight">
+              {selectedTemplate ? selectedTemplate.name : "Your Masterpieces"}
             </h1>
-            <p className="mt-3 text-xl text-slate-200/80 max-w-3xl mx-auto">
-              Manage and view all your published templates. Track performance and engagement metrics.
+            <p className="text-slate-500 font-light mt-4 text-lg">
+              {selectedTemplate 
+                ? `You have created ${userPages.length} pages using this layout.`
+                : "Select a layout blueprint to manage your published pages."}
             </p>
-          </motion.div>
+          </div>
 
-          {/* Cards Grid */}
-          <AnimatePresence>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {templates.map((template, index) => {
-                const IconComponent = template.icon;
-                return (
-                  <motion.div
-                    key={template.id || template._id || index}
-                    variants={cardVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
-                    whileHover={{
-                      scale: 1.03,
-                      y: -8,
-                    }}
-                    className="group cursor-pointer"
-                    onClick={() => (window.location.href = template.redirect)}
-                  >
-                    <div className="relative bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden shadow-2xl hover:shadow-3xl hover:shadow-emerald-500/10 transition-all duration-500 group-hover:border-white/20">
-                      {/* Animated gradient overlay */}
-                      <div
-                        className={`absolute inset-0 bg-gradient-to-br ${template.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500`}
-                      ></div>
+          <div className="flex items-center gap-4">
+             <div className="relative w-64 hidden md:block">
+               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+               <input 
+                 type="text" 
+                 placeholder="Search your pages..." 
+                 className="input-field pl-10 py-3 bg-white border-2 border-slate-100 focus:border-black transition-all"
+                 value={searchQuery}
+                 onChange={(e) => setSearchQuery(e.target.value)}
+               />
+             </div>
+             <Link href="/user/tem" className="button-primary px-8 py-3.5 flex items-center gap-2 shadow-xl shadow-accent/20">
+               <Plus className="w-4 h-4" /> New Page
+             </Link>
+          </div>
+        </div>
 
-                      {/* Content */}
-                      <div className="relative p-6">
-                        {/* Header with icon and actions */}
-                        <div className="flex items-start justify-between mb-4">
-                          <div
-                            className={`${template.bgColor} backdrop-blur-sm rounded-xl p-3 group-hover:scale-110 transition-transform duration-300 border border-white/10`}
-                          >
-                            <IconComponent
-                              className={`h-6 w-6 ${template.iconColor}`}
-                            />
-                          </div>
-                          <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            <button className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors">
-                              <Eye className="h-4 w-4 text-white/70" />
-                            </button>
-                            <button className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors">
-                              <Share2 className="h-4 w-4 text-white/70" />
-                            </button>
-                          </div>
-                        </div>
+        {error && (
+          <div className="p-6 rounded-2xl bg-red-50 border-2 border-red-100 text-red-600 mb-8 flex items-center gap-3">
+             <Info className="w-5 h-5" />
+             <span className="font-medium text-sm">{error}</span>
+          </div>
+        )}
 
-                        {/* Title and description */}
-                        <h3 className="text-lg font-bold text-white mb-2 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-emerald-200 group-hover:to-cyan-200 transition-all duration-300">
-                          {template.name}
-                        </h3>
-
-                        <p className="text-slate-300/70 text-sm leading-relaxed mb-4 line-clamp-2">
-                          {template.description}
-                        </p>
-
-                        {/* Stats and metadata */}
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="px-2 py-1 bg-white/10 rounded-full text-slate-300 capitalize">
-                              {template.type}
-                            </span>
-                            <span className="text-emerald-400 font-medium">
-                              Published {new Date(template.publishedDate).toLocaleDateString()}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-4 text-xs text-slate-400">
-                              <div className="flex items-center">
-                                <Eye className="h-3 w-3 mr-1" />
-                                {template.views.toLocaleString()} views
-                              </div>
-                              <div className="flex items-center">
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                {template.usageCount} uses
-                              </div>
+        {loading && !templates.length ? (
+          <div className="flex items-center justify-center py-40">
+            <Loader2 className="w-10 h-10 text-accent animate-spin" />
+          </div>
+        ) : (
+          <AnimatePresence mode="wait">
+            {!selectedTemplate ? (
+              /* Template Selection View */
+              <motion.div 
+                key="templates"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10"
+              >
+                {templates.map((template) => {
+                  const config = getTemplateConfig(template.name);
+                  return (
+                    <div 
+                      key={template._id}
+                      onClick={() => fetchUserPagesForTemplate(template)}
+                      className="bg-white rounded-[40px] border-2 border-slate-50 hover:border-black overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-700 cursor-pointer group p-4"
+                    >
+                      <div className="aspect-[16/10] bg-slate-50 rounded-[30px] relative overflow-hidden">
+                         <img 
+                           src={config.img} 
+                           alt={template.name} 
+                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-90 group-hover:opacity-100" 
+                         />
+                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-500" />
+                         <div className="absolute bottom-6 right-6 translate-y-10 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-500">
+                            <div className="w-12 h-12 rounded-full bg-black text-white shadow-2xl flex items-center justify-center">
+                               <ArrowRight className="w-5 h-5" />
                             </div>
-                          </div>
-
-                          {/* Progress bar for engagement */}
-                          <div className="w-full bg-white/10 rounded-full h-1.5">
-                            <div 
-                              className={`h-1.5 rounded-full bg-gradient-to-r ${template.color} transition-all duration-1000`}
-                              style={{ width: `${Math.min((template.views / 5000) * 100, 100)}%` }}
-                            ></div>
-                          </div>
-                        </div>
-
-                        {/* Hover action indicator */}
-                        <div className="mt-4 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                          <span className="text-xs text-emerald-300 font-medium">
-                            Click to manage
-                          </span>
-                          <ArrowRight className="h-4 w-4 text-emerald-400 group-hover:translate-x-1 transition-transform duration-300" />
-                        </div>
+                         </div>
+                      </div>
+                      <div className="p-8">
+                        <h3 className="text-2xl font-bold text-slate-900 mb-2 group-hover:text-accent transition-colors">{template.name}</h3>
+                        <p className="text-slate-500 font-light text-sm line-clamp-1">{template.description}</p>
                       </div>
                     </div>
-                  </motion.div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </motion.div>
+            ) : (
+              /* User Pages View */
+              <motion.div 
+                key="pages"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+              >
+                {userPages.length > 0 ? (
+                  userPages.map((page) => (
+                    <div key={page._id} className="bg-white rounded-[32px] border-2 border-black p-8 hover:shadow-2xl transition-all group flex flex-col h-full relative">
+                       <div className="flex items-start justify-between mb-8">
+                         <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-900 group-hover:bg-black group-hover:text-white transition-all">
+                           <Layout className="w-6 h-6" />
+                         </div>
+                         <div className="flex gap-2">
+                           <button onClick={() => handleView(page)} className="p-3 rounded-xl bg-slate-50 text-slate-900 hover:bg-black hover:text-white transition-all border border-slate-200 shadow-sm" title="View Page">
+                             <Eye className="w-4.5 h-4.5" />
+                           </button>
+                           <button onClick={() => handleEdit(page)} className="p-3 rounded-xl bg-slate-50 text-slate-900 hover:bg-black hover:text-white transition-all border border-slate-200 shadow-sm" title="Edit Content">
+                             <Edit2 className="w-4.5 h-4.5" />
+                           </button>
+                         </div>
+                       </div>
+
+                       <h3 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-accent transition-colors">
+                          {page.heading || page.title || "Untitled Masterpiece"}
+                       </h3>
+                       <p className="text-slate-600 font-light text-sm line-clamp-3 leading-relaxed mb-8">
+                          {page.subheading || page.subtitle || "No description provided for this page."}
+                       </p>
+
+                       <div className="mt-auto flex items-center justify-between pt-6 border-t border-slate-100">
+                          <div className="flex items-center gap-2 text-slate-400">
+                             <History className="w-4 h-4" />
+                             <span className="text-[10px] font-bold uppercase tracking-[0.2em] font-mono">
+                               {new Date(page.createdAt).toLocaleDateString()}
+                             </span>
+                          </div>
+                           <button 
+                             onClick={() => handleShare(page)}
+                             className="p-2.5 rounded-full hover:bg-slate-50 text-slate-400 hover:text-black transition-colors"
+                             title="Copy Shareable Link"
+                           >
+                              <Share2 className="w-4.5 h-4.5" />
+                           </button>
+                       </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-full text-center py-32 bg-slate-50/50 rounded-[60px] border-2 border-dashed border-slate-200">
+                     <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center mx-auto mb-8 shadow-sm">
+                        <Plus className="w-8 h-8 text-slate-200" />
+                     </div>
+                     <h3 className="text-2xl font-bold text-slate-900 mb-2">No pages found</h3>
+                     <p className="text-slate-500 font-light mb-10 max-w-sm mx-auto">You haven't created any pages using the <b>{selectedTemplate.name}</b> layout yet.</p>
+                     <Link href={`/user/tem/${selectedTemplate._id}`} className="button-primary px-10 py-4 text-base">
+                        Build Your First Page
+                     </Link>
+                  </div>
+                )}
+              </motion.div>
+            )}
           </AnimatePresence>
-        </div>
-      </div>
-    </>
+        )}
+      </main>
+    </div>
   );
 }

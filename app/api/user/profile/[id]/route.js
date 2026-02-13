@@ -9,7 +9,7 @@ export async function GET(request, { params }) {
     await connectDB();
 
     // Get the user ID from the dynamic route parameter
-    const { id } = params;
+    const { id } = await params;
 
     // Validate ID
     if (!id) {
@@ -61,7 +61,7 @@ export async function PUT(request, { params }) {
   try {
     await connectDB();
 
-    const { id } = params;
+    const { id } = await params;
     if (!id) {
       return NextResponse.json({ message: "User ID is required" }, { status: 400 });
     }

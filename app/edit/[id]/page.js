@@ -3,6 +3,23 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  ArrowLeft, 
+  Save, 
+  Settings, 
+  Layout, 
+  Image as ImageIcon, 
+  Video, 
+  Link as LinkIcon, 
+  Type, 
+  CheckCircle, 
+  AlertCircle,
+  Loader2,
+  Trash2,
+  Brush
+} from "lucide-react";
+import UserNavbar from "@/app/user/Header";
 
 export default function EditContent() {
   const [content, setContent] = useState(null);
@@ -15,6 +32,7 @@ export default function EditContent() {
     askUserDetails: false,
   });
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [hasPermission, setHasPermission] = useState(true);
   const params = useParams();
   const router = useRouter();
@@ -23,21 +41,18 @@ export default function EditContent() {
   useEffect(() => {
     async function fetchContent() {
       try {
-        const response = await fetch("/api/upload");
+        setLoading(true);
+        // Fetch only the specific content by ID
+        const response = await fetch(`/api/upload?id=${contentId}`);
         const result = await response.json();
-        if (result.success) {
-          const contentData = result.content.find(
-            (item) => item._id === contentId
-          );
-          if (!contentData) {
-            toast.error("Content not found");
-            router.push("/publish");
-            return;
-          }
+        
+        if (result.success && result.content && result.content.length > 0) {
+          const contentData = result.content[0];
 
           const isSuperadmin = localStorage.getItem("superadminAuth") === "true";
           const userId = localStorage.getItem("userid");
           const createdById = (contentData.createdBy || "").toString();
+          
           if (!isSuperadmin && (!userId || createdById !== userId)) {
             setHasPermission(false);
             setLoading(false);
@@ -46,10 +61,14 @@ export default function EditContent() {
 
           setContent(contentData);
           setTemplate(contentData.templateId);
+
+          // Handle sections data - ensure it's an object
+          const sections = contentData.sections || {};
+          
           setFormData({
-            heading: contentData.heading,
-            subheading: contentData.subheading,
-            sections: contentData.sections,
+            heading: contentData.heading || "",
+            subheading: contentData.subheading || "",
+            sections: sections,
             backgroundColor: contentData.backgroundColor || "#ffffff",
             askUserDetails: contentData.askUserDetails || false,
           });
@@ -90,12 +109,14 @@ export default function EditContent() {
   };
 
   const handleFileChange = (sectionId, file) => {
+    if (!file) return;
+    const sectionType = template?.sections?.find(s => s.id === sectionId)?.type || "image";
     setFormData((prev) => ({
       ...prev,
       sections: {
         ...prev.sections,
         [sectionId]: { 
-          type: prev.sections[sectionId]?.type || "image",
+          type: sectionType,
           value: file 
         },
       },
@@ -104,15 +125,18 @@ export default function EditContent() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaving(true);
 
     const isSuperadmin = localStorage.getItem("superadminAuth") === "true";
     const userIdLocal = localStorage.getItem("userid");
     const effectiveUserId = isSuperadmin
       ? (content?.createdBy ? content.createdBy.toString() : userIdLocal)
       : userIdLocal;
+      
     if (!effectiveUserId || effectiveUserId === "null") {
       toast.error("Please log in to update content");
       router.push("/user/register");
+      setSaving(false);
       return;
     }
 
@@ -125,14 +149,14 @@ export default function EditContent() {
     data.append("askUserDetails", formData.askUserDetails);
     data.append("userId", effectiveUserId);
     
-    // Handle sections - properly send files and text
     Object.entries(formData.sections).forEach(([sectionId, section]) => {
-      if (section.value instanceof File) {
-        // Send file directly
-        data.append(sectionId, section.value);
-      } else if (typeof section.value === 'string') {
-        // Send string value (URL or text)
-        data.append(sectionId, section.value);
+      // Handle both { value: ... } object format and legacy string format
+      const val = (section && typeof section === 'object' && 'value' in section) ? section.value : section;
+      
+      if (val instanceof File) {
+        data.append(sectionId, val);
+      } else if (typeof val === 'string' || typeof val === 'number') {
+        data.append(sectionId, String(val));
       }
     });
 
@@ -144,492 +168,325 @@ export default function EditContent() {
       });
       const result = await response.json();
       if (result.success) {
-        toast.success("Content updated successfully");
-        router.push("/");
+        toast.success("Changes saved successfully!");
+        router.push("/publish");
       } else {
         toast.error(result.message || "Failed to update content");
       }
     } catch (error) {
       toast.error("Error updating content");
       console.error(error);
+    } finally {
+      setSaving(false);
     }
-  };
-
-  const isUrl = (text) => {
-    try {
-      new URL(text);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
-  const renderTextPreview = (text) => {
-    if (!text) return null;
-    
-    if (isUrl(text)) {
-      return (
-        <a 
-          href={text} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="text-blue-500 hover:text-blue-600 underline break-all"
-        >
-          {text}
-        </a>
-      );
-    }
-
-    const lines = text.split('\n');
-    return lines.map((line, idx) => {
-      const trimmed = line.trim();
-      if (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*')) {
-        return (
-          <li key={idx} className="ml-4">
-            {trimmed.substring(1).trim()}
-          </li>
-        );
-      }
-      return <p key={idx} className="mb-2">{line}</p>;
-    });
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex justify-center items-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading content...</p>
-        </div>
+      <div className="min-h-screen bg-white flex flex-col justify-center items-center">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center"
+        >
+          <Loader2 className="w-12 h-12 text-accent animate-spin mx-auto mb-4" />
+          <p className="text-slate-500 font-light tracking-wide italic">Preparing your masterpiece...</p>
+        </motion.div>
       </div>
     );
   }
 
   if (!hasPermission) {
     return (
-      <div className="min-h-screen bg-gray-50 flex justify-center items-center p-4">
-        <div className="bg-white rounded-2xl shadow-lg p-8 text-center max-w-md w-full border border-gray-200">
-          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.864-.833-2.634 0L4.18 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
+      <div className="min-h-screen bg-slate-50 flex justify-center items-center p-6">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-[40px] shadow-2xl p-12 text-center max-w-xl w-full border border-slate-100"
+        >
+          <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-8">
+            <AlertCircle className="w-12 h-12 text-red-500" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
-          <p className="text-gray-600 mb-6">
-            You don't have permission to edit this content. Only the creator can modify it.
+          <h2 className="text-3xl font-bold text-slate-900 mb-4 tracking-tight">Access Denied</h2>
+          <p className="text-slate-500 font-light text-lg mb-10 leading-relaxed">
+            You don't have permission to edit this content. This masterpiece belongs to another creator.
           </p>
           <button
-            onClick={() => router.push("/")}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors"
+            onClick={() => router.push("/publish")}
+            className="button-primary px-10 py-4"
           >
-            Go Back Home
+            Return to Gallery
           </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!content || !template) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex justify-center items-center p-4">
-        <div className="bg-white rounded-2xl shadow-lg p-8 text-center max-w-md w-full border border-gray-200">
-          <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-10 h-10 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Content Not Found</h2>
-          <p className="text-gray-600 mb-6">The content or template you're looking for doesn't exist.</p>
-          <button
-            onClick={() => router.push("/")}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors"
-          >
-            Go Back Home
-          </button>
-        </div>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-200">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Edit Content</h1>
-              <p className="text-gray-500 text-sm mt-0.5">Update your content and preview changes</p>
-            </div>
-          </div>
-        </div>
+    <div className="min-h-screen bg-[#fafbfc] font-outfit">
+      <UserNavbar />
+      
+      <main className="pt-32 pb-20 px-6 max-w-4xl mx-auto">
+        {/* Breadcrumb & Title */}
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="mb-12"
+        >
+          <button 
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-slate-400 hover:text-black font-semibold text-xs mb-6 transition-colors group uppercase tracking-widest"
+          >
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Workspace
+          </button>
+          <h1 className="text-4xl md:text-5xl font-bold text-slate-900 tracking-tight">
+            Refine Creation
+          </h1>
+          <p className="text-slate-500 font-light mt-4 text-lg">
+            Template: <span className="text-accent font-medium font-mono text-sm uppercase">{template?.name}</span>
+          </p>
+        </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Editor Section */}
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-5">
-              <h2 className="text-lg font-semibold text-white flex items-center">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                </svg>
-                Content Editor
-              </h2>
+        <form onSubmit={handleSubmit} className="space-y-10">
+          {/* Core Branding Section */}
+          <motion.section 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-white rounded-[40px] border border-slate-100 p-10 shadow-sm hover:shadow-xl transition-all duration-500"
+          >
+            <div className="flex items-center gap-3 mb-10">
+               <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent">
+                  <Layout className="w-5 h-5" />
+               </div>
+               <h2 className="text-2xl font-bold text-slate-900">Visual Identity</h2>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
-              {/* Basic Info */}
+            <div className="space-y-8">
+              <div className="group">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 group-focus-within:text-accent transition-colors">
+                  Primary Heading
+                </label>
+                <input
+                  type="text"
+                  name="heading"
+                  value={formData.heading}
+                  onChange={handleInputChange}
+                  className="w-full text-2xl font-bold text-slate-900 bg-slate-50 border-none rounded-2xl px-6 py-5 focus:ring-4 focus:ring-accent/10 transition-all placeholder:text-slate-300"
+                  placeholder="The soul of your page..."
+                  required
+                />
+              </div>
+
+              <div className="group">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 group-focus-within:text-accent transition-colors">
+                  Supporting Message
+                </label>
+                <textarea
+                  name="subheading"
+                  value={formData.subheading}
+                  onChange={handleInputChange}
+                  className="w-full text-lg font-light text-slate-600 bg-slate-50 border-none rounded-2xl px-6 py-5 focus:ring-4 focus:ring-accent/10 transition-all placeholder:text-slate-300 min-h-[120px] resize-none"
+                  placeholder="Add context and depth..."
+                  required
+                />
+              </div>
+            </div>
+          </motion.section>
+
+          {/* Configuration & Aesthetic Section */}
+          <motion.section 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white rounded-[40px] border border-slate-100 p-10 shadow-sm hover:shadow-xl transition-all duration-500"
+          >
+            <div className="flex items-center gap-3 mb-10">
+               <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500">
+                  <Brush className="w-5 h-5" />
+               </div>
+               <h2 className="text-2xl font-bold text-slate-900">Style & Engagement</h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Heading <span className="text-red-500">*</span>
-                  </label>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">
+                  Atmosphere Color
+                </label>
+                <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-[24px]">
+                  <div className="relative w-14 h-14 rounded-2xl overflow-hidden border-4 border-white shadow-sm">
+                    <input
+                      type="color"
+                      value={formData.backgroundColor}
+                      onChange={handleColorChange}
+                      className="absolute inset-0 w-[200%] h-[200%] -translate-x-1/4 -translate-y-1/4 cursor-pointer"
+                    />
+                  </div>
                   <input
                     type="text"
-                    name="heading"
-                    value={formData.heading}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
-                    placeholder="Enter your heading"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Subheading <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="subheading"
-                    value={formData.subheading}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
-                    placeholder="Enter your subheading"
-                    required
+                    value={formData.backgroundColor}
+                    onChange={handleColorChange}
+                    className="bg-transparent border-none text-slate-600 font-mono text-sm focus:ring-0 w-24 p-0"
                   />
                 </div>
               </div>
 
-              {/* Settings */}
-              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
-                  <svg className="w-4 h-4 mr-1.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  Settings
-                </h3>
-                
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1.5">
-                      Background Color
-                    </label>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="color"
-                        value={formData.backgroundColor}
-                        onChange={handleColorChange}
-                        className="w-12 h-10 rounded border border-gray-300 cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={formData.backgroundColor}
-                        onChange={handleColorChange}
-                        className="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-gray-900 text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-2 pt-1">
+              <div className="space-y-4">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">
+                  Visitor Insight
+                </label>
+                <label className="flex items-center gap-4 bg-slate-50 p-5 rounded-[24px] cursor-pointer group hover:bg-slate-100 transition-colors">
+                  <div className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
-                      id="askUserDetails"
                       checked={formData.askUserDetails}
                       onChange={handleCheckboxChange}
-                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="sr-only peer"
                     />
-                    <label htmlFor="askUserDetails" className="text-sm text-gray-700 font-medium">
-                      Ask for user details
-                    </label>
+                    <div className="w-14 h-8 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-accent transition-all shadow-inner"></div>
                   </div>
-                </div>
+                  <span className="text-slate-600 font-medium text-sm group-hover:text-slate-900 transition-colors">
+                    Capture user responses
+                  </span>
+                </label>
+              </div>
+            </div>
+          </motion.section>
+
+          {/* Dynamic Sections */}
+          {template?.sections?.length > 0 && (
+            <motion.section 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="space-y-6"
+            >
+              <div className="flex items-center gap-3 px-4">
+                 <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+                    <Settings className="w-5 h-5" />
+                 </div>
+                 <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Component Configuration</h2>
               </div>
 
-              {/* Dynamic Sections */}
-              {template.sections && template.sections.length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-gray-900 flex items-center">
-                    <svg className="w-4 h-4 mr-1.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                    </svg>
-                    Content Sections
-                  </h3>
-
-                  {template.sections.map((section) => (
-                    <div key={section.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {section.title}
-                        {section.required && <span className="text-red-500 ml-1">*</span>}
-                        <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
-                          {section.type}
-                        </span>
-                      </label>
+              <div className="grid grid-cols-1 gap-6">
+                {template.sections.map((section, idx) => {
+                  const Icon = section.type === "image" ? ImageIcon : (section.type === "video" ? Video : (section.type === "link" ? LinkIcon : Type));
+                  const sectionData = formData.sections[section.id];
+                  const currentValue = typeof sectionData === 'string' ? sectionData : (sectionData?.value || "");
+                  
+                  return (
+                    <div key={section.id} className="bg-white rounded-[40px] border border-slate-100 p-8 shadow-sm group hover:shadow-xl transition-all duration-500">
+                      <div className="flex items-center justify-between mb-8">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-accent group-hover:text-white transition-all">
+                             <Icon className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-bold text-slate-900">{section.title}</h3>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{section.type}</p>
+                          </div>
+                        </div>
+                        {section.required && (
+                           <span className="text-[9px] font-bold text-accent/50 group-hover:text-accent border border-slate-100 px-2 py-1 rounded-md uppercase tracking-widest transition-colors">Required</span>
+                        )}
+                      </div>
 
                       {section.type === "text" ? (
                         <textarea
-                          value={formData.sections[section.id]?.value || ""}
+                          value={currentValue}
                           onChange={(e) => handleSectionChange(section.id, e.target.value)}
-                          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none min-h-[100px]"
-                          placeholder={`Enter ${section.title.toLowerCase()}`}
+                          className="w-full text-base font-light text-slate-600 bg-slate-50 border-none rounded-2xl px-6 py-5 focus:ring-4 focus:ring-accent/10 transition-all placeholder:text-slate-300 min-h-[150px]"
+                          placeholder={`Deepen your content here...`}
                           required={section.required}
                         />
                       ) : section.type === "link" ? (
-                        <input
-                          type="url"
-                          value={formData.sections[section.id]?.value || ""}
-                          onChange={(e) => handleSectionChange(section.id, e.target.value)}
-                          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
-                          placeholder={`Enter ${section.title.toLowerCase()} URL`}
-                          required={section.required}
-                        />
-                      ) : (section.type === "image" || section.type === "video") ? (
-                        <div className="space-y-3">
+                        <div className="relative">
+                          <LinkIcon className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
                           <input
+                            type="url"
+                            value={currentValue}
+                            onChange={(e) => handleSectionChange(section.id, e.target.value)}
+                            className="w-full text-base font-medium text-slate-900 bg-slate-50 border-none rounded-2xl pl-14 pr-6 py-5 focus:ring-4 focus:ring-accent/10 transition-all placeholder:text-slate-300"
+                            placeholder="https://your-link.com"
+                            required={section.required}
+                          />
+                        </div>
+                      ) : (
+                        <div className="space-y-6">
+                           <input
                             type="file"
                             accept={section.type === "image" ? "image/*" : "video/*"}
                             onChange={(e) => handleFileChange(section.id, e.target.files[0])}
                             className="hidden"
                             id={`file-${section.id}`}
-                            required={section.required && !formData.sections[section.id]?.value}
                           />
                           
-                          {formData.sections[section.id]?.value ? (
-                            <div className="space-y-2">
-                              {section.type === "image" && formData.sections[section.id].value instanceof File ? (
-                                <div className="relative group">
-                                  <img 
-                                    src={URL.createObjectURL(formData.sections[section.id].value)} 
-                                    alt={section.title}
-                                    className="w-full h-auto rounded-lg border border-gray-200"
-                                  />
-                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
-                                    <label
-                                      htmlFor={`file-${section.id}`}
-                                      className="bg-white hover:bg-gray-50 text-gray-900 px-4 py-2 rounded-lg cursor-pointer font-medium shadow-lg"
-                                    >
-                                      Change Image
-                                    </label>
-                                  </div>
-                                </div>
-                              ) : section.type === "video" && formData.sections[section.id].value instanceof File ? (
-                                <div className="space-y-2">
-                                  <video 
-                                    src={URL.createObjectURL(formData.sections[section.id].value)} 
-                                    controls
-                                    className="w-full h-auto rounded-lg border border-gray-200"
-                                  />
-                                  <label
-                                    htmlFor={`file-${section.id}`}
-                                    className="block text-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg cursor-pointer font-medium"
-                                  >
-                                    Change Video
+                          {currentValue ? (
+                            <div className="relative group/media rounded-3xl overflow-hidden bg-slate-50 border-2 border-slate-50">
+                               {section.type === "image" ? (
+                                 <img 
+                                   src={currentValue instanceof File ? URL.createObjectURL(currentValue) : currentValue} 
+                                   className="w-full h-auto max-h-[400px] object-cover" 
+                                   alt="Preview" 
+                                 />
+                               ) : (
+                                 <video 
+                                   src={currentValue instanceof File ? URL.createObjectURL(currentValue) : currentValue} 
+                                   controls 
+                                   className="w-full h-auto max-h-[400px]" 
+                                 />
+                               )}
+                               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/media:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+                                  <label htmlFor={`file-${section.id}`} className="bg-white text-black px-8 py-3 rounded-2xl font-bold text-sm shadow-2xl cursor-pointer hover:scale-105 transition-transform">
+                                     Replace {section.type}
                                   </label>
-                                </div>
-                              ) : typeof formData.sections[section.id].value === 'string' ? (
-                                <div className="space-y-2">
-                                  {section.type === "image" ? (
-                                    <div className="relative group">
-                                      <img 
-                                        src={formData.sections[section.id].value} 
-                                        alt={section.title}
-                                        className="w-full h-auto rounded-lg border border-gray-200"
-                                      />
-                                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
-                                        <label
-                                          htmlFor={`file-${section.id}`}
-                                          className="bg-white hover:bg-gray-50 text-gray-900 px-4 py-2 rounded-lg cursor-pointer font-medium shadow-lg"
-                                        >
-                                          Change Image
-                                        </label>
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <div className="space-y-2">
-                                      <video 
-                                        src={formData.sections[section.id].value} 
-                                        controls
-                                        className="w-full h-auto rounded-lg border border-gray-200"
-                                      />
-                                      <label
-                                        htmlFor={`file-${section.id}`}
-                                        className="block text-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg cursor-pointer font-medium"
-                                      >
-                                        Change Video
-                                      </label>
-                                    </div>
-                                  )}
-                                </div>
-                              ) : (
-                                <label
-                                  htmlFor={`file-${section.id}`}
-                                  className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-white hover:bg-gray-50 transition-colors"
-                                >
-                                  <svg className="w-10 h-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                  </svg>
-                                  <p className="text-sm text-gray-500">
-                                    <span className="font-medium">Click to upload</span> {section.type}
-                                  </p>
-                                </label>
-                              )}
+                               </div>
                             </div>
                           ) : (
-                            <label
-                              htmlFor={`file-${section.id}`}
-                              className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-white hover:bg-gray-50 transition-colors"
-                            >
-                              <svg className="w-10 h-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                              </svg>
-                              <p className="text-sm text-gray-500">
-                                <span className="font-medium">Click to upload</span> {section.type}
-                              </p>
+                            <label htmlFor={`file-${section.id}`} className="flex flex-col items-center justify-center w-full h-48 bg-slate-50 border-2 border-dashed border-slate-200 rounded-[32px] cursor-pointer hover:bg-slate-100 hover:border-slate-300 transition-all p-8 text-center">
+                               <div className="w-14 h-14 rounded-2xl bg-white shadow-sm flex items-center justify-center text-slate-300 mb-4 group-hover:scale-110 transition-transform">
+                                  <Icon className="w-6 h-6" />
+                               </div>
+                               <h4 className="text-slate-900 font-bold text-sm mb-1">Empower with {section.type}</h4>
+                               <p className="text-slate-400 text-xs font-light tracking-wide">Select a masterpiece from your device</p>
                             </label>
                           )}
                         </div>
-                      ) : null}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 shadow-sm"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span>Update Content</span>
-              </button>
-            </form>
-          </div>
-
-          {/* Preview Section */}
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 sticky top-8 h-fit">
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-5">
-              <h2 className="text-lg font-semibold text-white flex items-center">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-                Live Preview
-              </h2>
-            </div>
-
-            <div className="p-6 bg-gray-50 min-h-[600px]">
-              <div className="space-y-5">
-                <div>
-                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Heading</h3>
-                  <div className="bg-white rounded-lg p-4 border border-gray-200">
-                    <div className="text-gray-900 font-bold text-xl">
-                      {renderTextPreview(formData.heading) || <span className="text-gray-400">No heading</span>}
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Subheading</h3>
-                  <div className="bg-white rounded-lg p-4 border border-gray-200">
-                    <div className="text-gray-700 text-base">
-                      {renderTextPreview(formData.subheading) || <span className="text-gray-400">No subheading</span>}
-                    </div>
-                  </div>
-                </div>
-
-                {Object.entries(formData.sections).map(([sectionId, section]) => {
-                  const sectionDef = template.sections.find(s => s.id === sectionId);
-                  if (!sectionDef || !section.value) return null;
-
-                  return (
-                    <div key={sectionId}>
-                      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                        {sectionDef.title}
-                      </h3>
-                      <div className="bg-white rounded-lg p-4 border border-gray-200">
-                        {sectionDef.type === "text" ? (
-                          <div className="prose prose-sm max-w-none text-gray-700">
-                            {renderTextPreview(section.value)}
-                          </div>
-                        ) : sectionDef.type === "link" ? (
-                          <div className="flex items-center space-x-2">
-                            <svg className="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                            </svg>
-                            <a 
-                              href={section.value} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-blue-500 hover:text-blue-600 underline break-all"
-                            >
-                              {section.value}
-                            </a>
-                          </div>
-                        ) : sectionDef.type === "image" && section.value instanceof File ? (
-                          <div>
-                            <img 
-                              src={URL.createObjectURL(section.value)} 
-                              alt={sectionDef.title}
-                              className="w-full h-auto rounded-lg"
-                            />
-                            <p className="text-xs text-gray-500 mt-2">{section.value.name}</p>
-                          </div>
-                        ) : sectionDef.type === "video" && section.value instanceof File ? (
-                          <div>
-                            <video 
-                              src={URL.createObjectURL(section.value)} 
-                              controls
-                              className="w-full h-auto rounded-lg"
-                            />
-                            <p className="text-xs text-gray-500 mt-2">{section.value.name}</p>
-                          </div>
-                        ) : typeof section.value === 'string' && section.value.startsWith('http') ? (
-                          <div>
-                            {sectionDef.type === "image" ? (
-                              <img 
-                                src={section.value} 
-                                alt={sectionDef.title}
-                                className="w-full h-auto rounded-lg"
-                              />
-                            ) : sectionDef.type === "video" ? (
-                              <video 
-                                src={section.value} 
-                                controls
-                                className="w-full h-auto rounded-lg"
-                              />
-                            ) : null}
-                            <p className="text-xs text-gray-500 mt-2 break-all">{section.value}</p>
-                          </div>
-                        ) : (
-                          <p className="text-sm text-gray-500">
-                            {section.value.name || "File uploaded"}
-                          </p>
-                        )}
-                      </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
+            </motion.section>
+          )}
+
+          {/* Action Bar */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="flex items-center gap-4 pt-10"
+          >
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 bg-black text-white px-8 py-5 rounded-[24px] font-bold text-lg flex items-center justify-center gap-3 shadow-2xl shadow-black/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-6 h-6 animate-spin text-white/50" />
+                  <span>Sealing changes...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-6 h-6" />
+                  <span>Update Masterpiece</span>
+                </>
+              )}
+            </button>
+          </motion.div>
+        </form>
+      </main>
     </div>
   );
 }

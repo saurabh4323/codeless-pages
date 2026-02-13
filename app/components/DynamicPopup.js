@@ -213,7 +213,6 @@ export default function DynamicPopup({ templateId, onComplete }) {
       
       const response = await axios.post("/api/user/responses", {
         templateId,
-        contentId,
         userInfo,
         responses,
         tenantToken: tenantToken, // Ensure correct property name for tenant token
@@ -269,99 +268,133 @@ export default function DynamicPopup({ templateId, onComplete }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       >
         <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.9, opacity: 0 }}
-          className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+          initial={{ scale: 0.95, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.95, opacity: 0, y: 20 }}
+          transition={{ type: "spring", duration: 0.5 }}
+          className="bg-white rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden"
         >
-          <div className="p-6">
-            {/* Header */}
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+          {/* Header with Gradient */}
+          <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-8 text-white relative overflow-hidden">
+            <div className="absolute inset-0 bg-black/10"></div>
+            <div className="relative z-10">
+              <motion.div 
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2, type: "spring" }}
+                className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg"
+              >
                 <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  {currentStep === "userInfo" ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  )}
                 </svg>
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                {currentStep === "userInfo" ? "Quick Setup" : "Quick Quiz"}
+              </motion.div>
+              <h2 className="text-3xl font-bold text-center mb-2">
+                {currentStep === "userInfo" ? "Welcome!" : "Quick Questions"}
               </h2>
-              <p className="text-gray-800">
+              <p className="text-white/90 text-center text-sm">
                 {currentStep === "userInfo" 
-                  ? "Please provide your information to continue" 
-                  : "Answer a few questions to personalize your experience"
+                  ? "Let's get to know you better" 
+                  : "Help us personalize your experience"
                 }
               </p>
             </div>
+            
+            {/* Progress Indicator */}
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
+              <motion.div 
+                className="h-full bg-white"
+                initial={{ width: "0%" }}
+                animate={{ width: currentStep === "userInfo" ? "50%" : "100%" }}
+                transition={{ duration: 0.3 }}
+              />
+            </div>
+          </div>
 
+          {/* Content */}
+          <div className="p-8 overflow-y-auto max-h-[calc(90vh-200px)]">
             {/* Error Message */}
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4"
-              >
-                {error}
-              </motion.div>
-            )}
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-start gap-3"
+                >
+                  <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-sm font-medium">{error}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* User Info Form */}
             {currentStep === "userInfo" && (
               <motion.form
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
                 onSubmit={handleUserInfoSubmit}
-                className="space-y-4"
+                className="space-y-5"
               >
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1">
-                    Full Name
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Full Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={userInfo.name}
                     onChange={(e) => setUserInfo({ ...userInfo, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-black placeholder-gray-500"
-                    placeholder="Enter your full name"
+                    className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all text-slate-900 placeholder-slate-400"
+                    placeholder="John Doe"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1">
-                    Email Address
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Email Address <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="email"
                     value={userInfo.email}
                     onChange={(e) => setUserInfo({ ...userInfo, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-black placeholder-gray-500"
-                    placeholder="Enter your email"
+                    className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all text-slate-900 placeholder-slate-400"
+                    placeholder="john@example.com"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1">
-                     Number
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Phone Number <span className="text-red-500">*</span>
                   </label>
                   <input
-                    type="password"
+                    type="tel"
                     value={userInfo.password}
                     onChange={(e) => setUserInfo({ ...userInfo, password: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-black placeholder-gray-500"
-                    placeholder="Enter Your Number"
+                    className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all text-slate-900 placeholder-slate-400"
+                    placeholder="+1 (555) 000-0000"
                     required
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-purple-700 hover:to-blue-700 transition-all duration-200 transform hover:scale-105"
+                  className="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white py-4 px-6 rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
                 >
                   Continue
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
                 </button>
               </motion.form>
             )}
@@ -371,47 +404,87 @@ export default function DynamicPopup({ templateId, onComplete }) {
               <motion.form
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
                 onSubmit={handleQuestionsSubmit}
                 className="space-y-6"
               >
                 {Array.isArray(questions) && questions.length > 0 ? questions.map((question, questionIndex) => (
-                  <div key={questionIndex} className="space-y-3">
-                    <h3 className="font-semibold text-black text-lg">
-                      {questionIndex + 1}. {question?.questionText || "Question"}
+                  <motion.div 
+                    key={questionIndex} 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: questionIndex * 0.1 }}
+                    className="bg-slate-50 rounded-2xl p-5 border-2 border-slate-100"
+                  >
+                    <h3 className="font-bold text-slate-900 text-lg mb-4 flex items-start gap-2">
+                      <span className="flex-shrink-0 w-7 h-7 bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-lg flex items-center justify-center text-sm font-bold">
+                        {questionIndex + 1}
+                      </span>
+                      <span className="flex-1">{question?.questionText || "Question"}</span>
                     </h3>
-                    <div className="space-y-2">
+                    <div className="space-y-2 ml-9">
                       {Array.isArray(question?.options) ? question.options.map((option, optionIndex) => (
-                        <label key={optionIndex} className="flex items-center space-x-3 cursor-pointer">
+                        <label 
+                          key={optionIndex} 
+                          className={`flex items-center space-x-3 p-3 rounded-xl cursor-pointer transition-all ${
+                            responses[questionIndex]?.selectedOption === option.text
+                              ? 'bg-indigo-50 border-2 border-indigo-500 shadow-sm'
+                              : 'bg-white border-2 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50'
+                          }`}
+                        >
                           <input
                             type="radio"
                             name={`question-${questionIndex}`}
                             value={option.text}
                             checked={responses[questionIndex]?.selectedOption === option.text}
                             onChange={() => updateResponse(questionIndex, option.text)}
-                            className="text-purple-600 focus:ring-purple-500"
+                            className="w-5 h-5 text-indigo-600 focus:ring-indigo-500 focus:ring-2 cursor-pointer"
                             required
                           />
-                          <span className="text-black font-medium">{option.text}</span>
+                          <span className="text-slate-900 font-medium flex-1">{option.text}</span>
+                          {responses[questionIndex]?.selectedOption === option.text && (
+                            <svg className="w-5 h-5 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                          )}
                         </label>
-                      )) : <p>No options available</p>}
+                      )) : <p className="text-slate-500 text-sm">No options available</p>}
                     </div>
-                  </div>
-                )) : <p>No questions available</p>}
+                  </motion.div>
+                )) : <p className="text-center text-slate-500 py-8">No questions available</p>}
 
-                <div className="flex space-x-3">
+                <div className="flex gap-3 pt-4">
                   <button
                     type="button"
                     onClick={() => setCurrentStep("userInfo")}
-                    className="flex-1 py-3 px-4 border border-gray-300 text-black font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex-1 py-4 px-6 border-2 border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
                   >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
                     Back
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-purple-700 hover:to-blue-700 transition-all duration-200 transform hover:scale-105 disabled:opacity-50"
+                    className="flex-1 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white py-4 px-6 rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    {submitting ? "Submitting..." : "Submit"}
+                    {submitting ? (
+                      <>
+                        <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        Submit
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </>
+                    )}
                   </button>
                 </div>
               </motion.form>

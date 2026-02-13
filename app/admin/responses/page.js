@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import AdminNavbar from "../Navbar";
+
 import apiClient from "@/utils/apiClient";
 
 export default function AdminResponsesPage() {
@@ -88,7 +88,7 @@ export default function AdminResponsesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-300 mx-auto"></div>
           <p className="mt-4 text-blue-200">Loading responses...</p>
@@ -98,8 +98,8 @@ export default function AdminResponsesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900">
-      <AdminNavbar />
+    <div className="space-y-8">
+      
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-cyan-200 mb-4">
@@ -181,7 +181,7 @@ export default function AdminResponsesPage() {
                             response.responses.map((r, idx) => (
                               <div key={idx} className="bg-blue-900/30 border border-blue-400/20 rounded-xl p-3">
                                 <div className="text-sm text-blue-200 font-semibold mb-1">
-                                  Q{idx + 1}: {r.questionText}
+                                  {r.questionText}
                                 </div>
                                 <div className="text-sm text-blue-100">
                                   <span className="font-medium">Answer:</span> {r.selectedOption}

@@ -12,7 +12,7 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Find the organization
     const org = await AdminToken.findById(id);

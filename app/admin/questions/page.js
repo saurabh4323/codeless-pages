@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import AdminNavbar from "../Navbar";
+
 import apiClient from "@/utils/apiClient";
 
 export default function AdminQuestionsPage() {
@@ -328,10 +328,8 @@ export default function AdminQuestionsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900">
-      <AdminNavbar />
-
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div className="space-y-8">
+      <div className="max-w-7xl mx-auto">
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-cyan-200 mb-4">
             Template Questions Management

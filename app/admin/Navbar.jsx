@@ -1,235 +1,148 @@
 "use client";
-// components/admin/Navbar.jsx
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+import {
+  rxDashboard,
+  LayoutDashboard,
+  Users,
+  FileText,
+  MessageSquare,
+  HelpCircle,
+  BarChart3,
+  LogOut,
+  Menu,
+  X,
+  UploadCloud
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
-const AdminNavbar = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const router = useRouter();
+const navLinks = [
+  { name: "Dashboard", href: "/admin/hero", icon: LayoutDashboard },
+  { name: "Users", href: "/admin/users", icon: Users },
+  { name: "Templates", href: "/admin/tempall", icon: FileText },
+  { name: "Content", href: "/admin/uploads", icon: UploadCloud },
+  { name: "Reports", href: "/admin/feedback", icon: MessageSquare }, // Feedback as Reports
+  { name: "Questions", href: "/admin/questions", icon: HelpCircle },
+  { name: "Responses", href: "/admin/responses", icon: BarChart3 },
+];
 
-  useEffect(() => {
-    try {
-      const token = typeof window !== "undefined" ? localStorage.getItem("adminToken") : null;
-      setIsLoggedIn(!!token);
-    } catch (e) {
-      setIsLoggedIn(false);
-    }
-  }, []);
+export default function AdminNavbar() {
+  const pathname = usePathname();
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = () => {
-    try {
-      localStorage.removeItem("adminToken");
-      localStorage.removeItem("adminTokenData");
-    } catch (e) {}
-    setIsLoggedIn(false);
-    router.push("/admin/register");
+    localStorage.removeItem("adminToken");
+    window.location.href = "/admin/register";
   };
 
   return (
-    <nav className="bg-gray-900 text-white">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0f1023]/80 backdrop-blur-md border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <Link href="/admin/hero" className="font-bold text-xl">
-                Admin Dashboard
-              </Link>
+          {/* Logo */}
+          <Link href="/admin/hero" className="flex items-center gap-2 group">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-lg group-hover:shadow-blue-500/50 transition-all duration-300">
+              A
             </div>
-            <div className="hidden md:block">
-              <div className="ml-10 flex items-baseline space-x-4">
-                <Link
-                  href="/admin/hero"
-                  className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  href="/admin/users"
-                  className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
-                >
-                  User Management
-                </Link>
-                <Link
-                  href="/admin/tempall"
-                  className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
-                >
-                  Templates
-                </Link>
+            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400 group-hover:to-white transition-all duration-300">
+              Admin<span className="font-light">Panel</span>
+            </span>
+          </Link>
 
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-1">
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href;
+              const Icon = link.icon;
+              return (
                 <Link
-                  href="/admin/feedback"
-                  className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
+                  key={link.name}
+                  href={link.href}
+                  className={`relative px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 group ${isActive
+                    ? "text-white bg-white/10"
+                    : "text-gray-400 hover:text-white hover:bg-white/5"
+                    }`}
                 >
-                  Reports
+                  <Icon className={`w-4 h-4 transition-colors ${isActive ? "text-blue-400" : "text-gray-500 group-hover:text-blue-400"}`} />
+                  {link.name}
+                  {isActive && (
+                    <motion.div
+                      layoutId="adminNavbarIndicator"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-full"
+                      initial={false}
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    />
+                  )}
                 </Link>
-                <Link
-                  href="/admin/questions"
-                  className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
-                >
-                  Questions
-                </Link>
-                <Link
-                  href="/admin/responses"
-                  className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
-                >
-                  Responses
-                </Link>
-              </div>
-            </div>
+              );
+            })}
           </div>
-          <div className="hidden md:block">
-            <div className="flex items-center">
-              {/* <span className="mr-4 text-sm font-medium">Super Admin</span> */}
-              {/* <Link
-                href="/admin/settings"
-                className="p-2 rounded-full hover:bg-gray-700"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-              </Link> */}
-              {isLoggedIn ? (
-                <button
-                  onClick={handleLogout}
-                  className="ml-4 px-3 py-2 rounded-md text-sm font-medium bg-red-600 hover:bg-red-700"
-                >
-                  Logout
-                </button>
-              ) : (
-                <Link
-                  href="/admin/register"
-                  className="ml-4 px-3 py-2 rounded-md text-sm font-medium bg-red-600 hover:bg-red-700"
-                >
-                  Register
-                </Link>
-              )}
-            </div>
+
+          {/* Desktop Right Side */}
+          <div className="hidden md:flex items-center gap-4">
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all duration-300"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </button>
           </div>
+
+          {/* Mobile Menu Button */}
           <div className="md:hidden">
             <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md hover:bg-gray-700 focus:outline-none"
+              onClick={() => setIsOpen(!isOpen)}
+              className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
             >
-              <svg
-                className="h-6 w-6"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                {isMenuOpen ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                )}
-              </svg>
+              {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile menu */}
-      {isMenuOpen && (
-        <div className="md:hidden">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            <Link
-              href="/admin/hero"
-              className="block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700"
-            >
-              Dashboard
-            </Link>
-            <Link
-              href="/admin/users"
-              className="block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700"
-            >
-              User Management
-            </Link>
-            <Link
-              href="/admin/temp"
-              className="block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700"
-            >
-              Templates
-            </Link>
-            <Link
-              href="/admin/uploads"
-              className="block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700"
-            >
-              User Uploads
-            </Link>
-            <Link
-              href="/admin/reports"
-              className="block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700"
-            >
-              Reports
-            </Link>
-            <Link
-              href="/admin/questions"
-              className="block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700"
-            >
-              Questions
-            </Link>
-            <Link
-              href="/admin/responses"
-              className="block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700"
-            >
-              Responses
-            </Link>
-            <Link
-              href="/admin/settings"
-              className="block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700"
-            >
-              Settings
-            </Link>
-            {isLoggedIn ? (
-              <button
-                onClick={handleLogout}
-                className="block w-full text-left px-3 py-2 rounded-md text-base font-medium bg-red-600 hover:bg-red-700"
-              >
-                Logout
-              </button>
-            ) : (
-              <Link
-                href="/admin/register"
-                className="block px-3 py-2 rounded-md text-base font-medium bg-red-600 hover:bg-red-700"
-              >
-                Register
-              </Link>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Mobile Menu */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="md:hidden bg-[#0f1023] border-b border-white/10 overflow-hidden"
+          >
+            <div className="px-4 py-4 space-y-2">
+              {navLinks.map((link) => {
+                const isActive = pathname === link.href;
+                const Icon = link.icon;
+                return (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    onClick={() => setIsOpen(false)}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${isActive
+                      ? "bg-blue-600/20 text-blue-200 border border-blue-500/20"
+                      : "text-gray-400 hover:text-white hover:bg-white/5"
+                      }`}
+                  >
+                    <Icon className={`w-5 h-5 ${isActive ? "text-blue-400" : "text-gray-500"}`} />
+                    {link.name}
+                  </Link>
+                );
+              })}
+              <div className="pt-4 mt-4 border-t border-white/10">
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all"
+                >
+                  <LogOut className="w-5 h-5" />
+                  Logout
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
-};
-
-export default AdminNavbar;
+}

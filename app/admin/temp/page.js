@@ -1,11 +1,10 @@
-// pages/admin/templates/create.js
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
-import apiClient from "@/utils/apiClient";
 import Head from "next/head";
-import { CheckCircle, Trash, Plus, Save, Upload, Edit3, X } from "lucide-react";
+import { CheckCircle, Plus, Save, X, Trash2, Edit3, Image as ImageIcon, Video, FileText, Link as LinkIcon, GripVertical, Settings } from "lucide-react";
+import apiClient from "@/utils/apiClient";
+import { motion, AnimatePresence, Reorder } from "framer-motion";
 
 export default function CreateTemplate() {
   const router = useRouter();
@@ -16,8 +15,8 @@ export default function CreateTemplate() {
   const [template, setTemplate] = useState({
     name: "",
     description: "",
-    heading: "", // Added heading
-    subheading: "", // Added subheading
+    heading: "",
+    subheading: "",
     type: "basic",
     status: "draft",
     sections: [],
@@ -29,16 +28,14 @@ export default function CreateTemplate() {
     setTemplate((prev) => ({ ...prev, createdBy }));
   }, []);
 
-  // Available section types
   const sectionTypes = [
-    { id: "text", label: "Text Block", icon: "Edit3" },
-    { id: "image", label: "Image Upload", icon: "Image" },
-    { id: "video", label: "Video Embed", icon: "Video" },
-    { id: "file", label: "File Upload", icon: "File" },
-    { id: "link", label: "External Link", icon: "Link" },
+    { id: "text", label: "Text Block", icon: Edit3 },
+    { id: "image", label: "Image Upload", icon: ImageIcon },
+    { id: "video", label: "Video Embed", icon: Video },
+    { id: "file", label: "File Upload", icon: FileText },
+    { id: "link", label: "External Link", icon: LinkIcon },
   ];
 
-  // Template types
   const templateTypes = [
     { id: "basic", label: "Basic Template" },
     { id: "article", label: "Article Template" },
@@ -47,7 +44,6 @@ export default function CreateTemplate() {
     { id: "report", label: "Report Template" },
   ];
 
-  // Add a new section to the template
   const addSection = (type) => {
     const newSection = {
       id: `section-${Date.now()}`,
@@ -56,48 +52,8 @@ export default function CreateTemplate() {
       description: "",
       required: false,
       order: template.sections.length,
-      config: {},
+      config: getDefaultConfig(type),
     };
-
-    // Add specific configuration based on section type
-    switch (type) {
-      case "text":
-        newSection.config = {
-          minLength: 0,
-          maxLength: 1000,
-          placeholder: "Enter text here...",
-          format: "plain", // plain, markdown, html
-        };
-        break;
-      case "image":
-        newSection.config = {
-          maxSize: 5, // MB
-          allowedTypes: ["jpg", "jpeg", "png", "gif"],
-          width: 800,
-          height: 600,
-          aspectRatio: "4:3",
-        };
-        break;
-      case "video":
-        newSection.config = {
-          maxDuration: 300, // seconds
-          maxSize: 100, // MB
-          allowedSources: ["upload", "youtube", "vimeo"],
-        };
-        break;
-      case "file":
-        newSection.config = {
-          maxSize: 10, // MB
-          allowedTypes: ["pdf", "doc", "docx", "xls", "xlsx"],
-        };
-        break;
-      case "link":
-        newSection.config = {
-          validateUrl: true,
-          allowedDomains: [],
-        };
-        break;
-    }
 
     setTemplate({
       ...template,
@@ -105,7 +61,17 @@ export default function CreateTemplate() {
     });
   };
 
-  // Remove a section from the template
+  const getDefaultConfig = (type) => {
+    switch (type) {
+      case "text": return { minLength: 0, maxLength: 1000, placeholder: "Enter text here...", format: "plain" };
+      case "image": return { maxSize: 5, allowedTypes: ["jpg", "jpeg", "png", "gif"], width: 800, height: 600, aspectRatio: "4:3" };
+      case "video": return { maxDuration: 300, maxSize: 100, allowedSources: ["upload", "youtube", "vimeo"] };
+      case "file": return { maxSize: 10, allowedTypes: ["pdf", "doc", "docx", "xls", "xlsx"] };
+      case "link": return { validateUrl: true, allowedDomains: [] };
+      default: return {};
+    }
+  };
+
   const removeSection = (sectionId) => {
     setTemplate({
       ...template,
@@ -113,897 +79,251 @@ export default function CreateTemplate() {
     });
   };
 
-  // Update a section's properties
   const updateSection = (sectionId, field, value) => {
     setTemplate({
       ...template,
-      sections: template.sections.map((section) => {
-        if (section.id === sectionId) {
-          return { ...section, [field]: value };
-        }
-        return section;
-      }),
+      sections: template.sections.map((section) => 
+        section.id === sectionId ? { ...section, [field]: value } : section
+      ),
     });
   };
 
-  // Update section config
   const updateSectionConfig = (sectionId, configField, value) => {
     setTemplate({
       ...template,
-      sections: template.sections.map((section) => {
-        if (section.id === sectionId) {
-          return {
-            ...section,
-            config: {
-              ...section.config,
-              [configField]: value,
-            },
-          };
-        }
-        return section;
-      }),
+      sections: template.sections.map((section) => 
+        section.id === sectionId ? { ...section, config: { ...section.config, [configField]: value } } : section
+      ),
     });
   };
 
-  // Reorder sections using drag and drop (simplified version)
-  const moveSection = (fromIndex, toIndex) => {
-    const newSections = [...template.sections];
-    const [movedSection] = newSections.splice(fromIndex, 1);
-    newSections.splice(toIndex, 0, movedSection);
-
-    // Update order property
-    const updatedSections = newSections.map((section, index) => ({
-      ...section,
-      order: index,
-    }));
-
-    setTemplate({
-      ...template,
-      sections: updatedSections,
-    });
-  };
-
-  // Handle template form field changes
   const handleTemplateChange = (field, value) => {
-    setTemplate({
-      ...template,
-      [field]: value,
-    });
+    setTemplate({ ...template, [field]: value });
   };
 
-  // Save template (draft or publish)
   const saveTemplate = async (status = "draft") => {
     try {
       setLoading(true);
       setError("");
       setMessage("");
 
-      // Validate template
       if (!template.name.trim()) {
         setError("Template name is required");
         setLoading(false);
         return;
       }
 
-      // Update status
-      const templateToSave = {
-        ...template,
-        status: status,
-      };
-
-      // Send to API
-      const response =  await apiClient.post(
-        "/api/admin/templatecreate",
-        templateToSave
-      );
+      const response = await apiClient.post("/api/admin/templatecreate", { ...template, status });
 
       if (response.data.success) {
-        setMessage(
-          status === "published"
-            ? "Template published successfully!"
-            : "Template saved as draft!"
-        );
-
-        // Redirect to template list after a delay
+        setMessage(status === "published" ? "Template published successfully!" : "Template saved as draft!");
         if (status === "published") {
-          setTimeout(() => {
-            router.push("/admin/hero");
-          }, 2000);
+          setTimeout(() => router.push("/admin/tempall"), 2000);
         }
       }
     } catch (err) {
-      console.error("Error saving template:", err);
       setError(err.response?.data?.message || "Failed to save template");
     } finally {
       setLoading(false);
     }
   };
 
-  // Render section configuration form based on type
-  const renderSectionConfig = (section) => {
-    switch (section.type) {
-      case "text":
-        return (
-          <div className="mt-4 space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Min Length
-              </label>
-              <input
-                type="number"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                value={section.config.minLength}
-                onChange={(e) =>
-                  updateSectionConfig(
-                    section.id,
-                    "minLength",
-                    parseInt(e.target.value) || 0
-                  )
-                }
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Max Length
-              </label>
-              <input
-                type="number"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                value={section.config.maxLength}
-                onChange={(e) =>
-                  updateSectionConfig(
-                    section.id,
-                    "maxLength",
-                    parseInt(e.target.value) || 0
-                  )
-                }
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Placeholder Text
-              </label>
-              <input
-                type="text"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                value={section.config.placeholder}
-                onChange={(e) =>
-                  updateSectionConfig(section.id, "placeholder", e.target.value)
-                }
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Format
-              </label>
-              <select
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                value={section.config.format}
-                onChange={(e) =>
-                  updateSectionConfig(section.id, "format", e.target.value)
-                }
-              >
-                <option value="plain">Plain Text</option>
-                <option value="markdown">Markdown</option>
-                <option value="html">HTML</option>
-              </select>
-            </div>
-          </div>
-        );
-
-      case "image":
-        return (
-          <div className="mt-4 space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Max Size (MB)
-              </label>
-              <input
-                type="number"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                value={section.config.maxSize}
-                onChange={(e) =>
-                  updateSectionConfig(
-                    section.id,
-                    "maxSize",
-                    parseInt(e.target.value) || 1
-                  )
-                }
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Width (px)
-              </label>
-              <input
-                type="number"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                value={section.config.width}
-                onChange={(e) =>
-                  updateSectionConfig(
-                    section.id,
-                    "width",
-                    parseInt(e.target.value) || 800
-                  )
-                }
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Height (px)
-              </label>
-              <input
-                type="number"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                value={section.config.height}
-                onChange={(e) =>
-                  updateSectionConfig(
-                    section.id,
-                    "height",
-                    parseInt(e.target.value) || 600
-                  )
-                }
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Aspect Ratio
-              </label>
-              <select
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                value={section.config.aspectRatio}
-                onChange={(e) =>
-                  updateSectionConfig(section.id, "aspectRatio", e.target.value)
-                }
-              >
-                <option value="4:3">4:3</option>
-                <option value="16:9">16:9</option>
-                <option value="1:1">1:1</option>
-                <option value="free">Free Form</option>
-              </select>
-            </div>
-          </div>
-        );
-
-      case "video":
-        return (
-          <div className="mt-4 space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Max Duration (seconds)
-              </label>
-              <input
-                type="number"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                value={section.config.maxDuration}
-                onChange={(e) =>
-                  updateSectionConfig(
-                    section.id,
-                    "maxDuration",
-                    parseInt(e.target.value) || 300
-                  )
-                }
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Max Size (MB)
-              </label>
-              <input
-                type="number"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                value={section.config.maxSize}
-                onChange={(e) =>
-                  updateSectionConfig(
-                    section.id,
-                    "maxSize",
-                    parseInt(e.target.value) || 100
-                  )
-                }
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Allowed Sources
-              </label>
-              <div className="mt-2 space-y-2">
-                {["upload", "youtube", "vimeo"].map((source) => (
-                  <div key={source} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id={`source-${source}`}
-                      checked={section.config.allowedSources.includes(source)}
-                      onChange={(e) => {
-                        const currentSources = [
-                          ...section.config.allowedSources,
-                        ];
-                        if (e.target.checked) {
-                          if (!currentSources.includes(source)) {
-                            updateSectionConfig(section.id, "allowedSources", [
-                              ...currentSources,
-                              source,
-                            ]);
-                          }
-                        } else {
-                          updateSectionConfig(
-                            section.id,
-                            "allowedSources",
-                            currentSources.filter((s) => s !== source)
-                          );
-                        }
-                      }}
-                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 rounded"
-                    />
-                    <label
-                      htmlFor={`source-${source}`}
-                      className="ml-2 block text-sm text-gray-700 capitalize"
-                    >
-                      {source}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        );
-
-      case "file":
-        return (
-          <div className="mt-4 space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Max Size (MB)
-              </label>
-              <input
-                type="number"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                value={section.config.maxSize}
-                onChange={(e) =>
-                  updateSectionConfig(
-                    section.id,
-                    "maxSize",
-                    parseInt(e.target.value) || 10
-                  )
-                }
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Allowed File Types
-              </label>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {["pdf", "doc", "docx", "xls", "xlsx", "txt", "zip"].map(
-                  (fileType) => (
-                    <div key={fileType} className="flex items-center">
-                      <input
-                        type="checkbox"
-                        id={`filetype-${fileType}`}
-                        checked={section.config.allowedTypes.includes(fileType)}
-                        onChange={(e) => {
-                          const currentTypes = [...section.config.allowedTypes];
-                          if (e.target.checked) {
-                            if (!currentTypes.includes(fileType)) {
-                              updateSectionConfig(section.id, "allowedTypes", [
-                                ...currentTypes,
-                                fileType,
-                              ]);
-                            }
-                          } else {
-                            updateSectionConfig(
-                              section.id,
-                              "allowedTypes",
-                              currentTypes.filter((t) => t !== fileType)
-                            );
-                          }
-                        }}
-                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 rounded"
-                      />
-                      <label
-                        htmlFor={`filetype-${fileType}`}
-                        className="ml-2 block text-sm text-gray-700"
-                      >
-                        {fileType.toUpperCase()}
-                      </label>
-                    </div>
-                  )
-                )}
-              </div>
-            </div>
-          </div>
-        );
-
-      case "link":
-        return (
-          <div className="mt-4 space-y-3">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id={`validate-url-${section.id}`}
-                checked={section.config.validateUrl}
-                onChange={(e) =>
-                  updateSectionConfig(
-                    section.id,
-                    "validateUrl",
-                    e.target.checked
-                  )
-                }
-                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 rounded"
-              />
-              <label
-                htmlFor={`validate-url-${section.id}`}
-                className="ml-2 block text-sm text-gray-700"
-              >
-                Validate URL format
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Allowed Domains (leave empty to allow all)
-              </label>
-              <div className="mt-2">
-                <textarea
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                  rows="3"
-                  placeholder="example.com, another-site.org"
-                  value={section.config.allowedDomains.join(", ")}
-                  onChange={(e) => {
-                    const domains = e.target.value
-                      .split(",")
-                      .map((domain) => domain.trim())
-                      .filter((domain) => domain);
-                    updateSectionConfig(section.id, "allowedDomains", domains);
-                  }}
-                />
-                <p className="mt-1 text-sm text-gray-500">
-                  Enter domains separated by commas
-                </p>
-              </div>
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="space-y-8">
       <Head>
         <title>Create Template | Admin Dashboard</title>
       </Head>
 
-      <div className="py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-semibold text-gray-900">
-              Create New Template
-            </h1>
-            <div className="flex space-x-3">
-              <button
-                onClick={() => router.push("/admin/templates")}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => saveTemplate("draft")}
-                disabled={loading}
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                <Save className="mr-2 h-4 w-4" />
-                Save Draft
-              </button>
-              <button
-                onClick={() => saveTemplate("published")}
-                disabled={loading}
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-              >
-                <CheckCircle className="mr-2 h-4 w-4" />
-                Publish
-              </button>
-            </div>
-          </div>
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <Plus className="w-6 h-6 text-white" />
+             </div>
+             Create New Template
+          </h1>
+          <p className="text-gray-400">Design your template structure and settings</p>
+        </div>
+        
+        <div className="flex gap-3">
+          <button
+            onClick={() => router.push("/admin/tempall")}
+            className="px-4 py-2 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 transition-colors font-medium border border-transparent hover:border-white/10"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => saveTemplate("draft")}
+            disabled={loading}
+            className="bg-white/10 text-white px-4 py-2 rounded-xl hover:bg-white/20 border border-white/10 transition-colors flex items-center gap-2 font-medium"
+          >
+            <Save className="w-4 h-4" />
+            Save Draft
+          </button>
+          <button
+            onClick={() => saveTemplate("published")}
+            disabled={loading}
+            className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-2 rounded-xl hover:from-green-700 hover:to-emerald-700 shadow-lg shadow-green-500/20 transition-all flex items-center gap-2 font-bold"
+          >
+            <CheckCircle className="w-4 h-4" />
+            Publish
+          </button>
+        </div>
+      </div>
 
-          {error && (
-            <div className="mt-4 bg-red-50 border-l-4 border-red-400 p-4">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <X className="h-5 w-5 text-red-400" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-red-700">{error}</p>
-                </div>
+      <AnimatePresence>
+        {error && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-red-200 flex items-center gap-3">
+            <X className="w-5 h-5" /> {error}
+          </motion.div>
+        )}
+        {message && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 text-green-200 flex items-center gap-3">
+            <CheckCircle className="w-5 h-5" /> {message}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Left Column: Template Details */}
+        <div className="lg:col-span-1 space-y-6">
+          <div className="bg-[#1e1b4b]/30 backdrop-blur-xl border border-white/5 rounded-2xl p-6">
+            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <Settings className="w-5 h-5 text-blue-400" />
+              Template Settings
+            </h3>
+            
+            <div className="space-y-4">
+              <div className="group">
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Template Name</label>
+                <input
+                  type="text"
+                  value={template.name}
+                  onChange={(e) => handleTemplateChange("name", e.target.value)}
+                  className="w-full px-4 py-3 bg-[#0f1023] border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                  placeholder="e.g. Monthly Report"
+                />
               </div>
-            </div>
-          )}
 
-          {message && (
-            <div className="mt-4 bg-green-50 border-l-4 border-green-400 p-4">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <CheckCircle className="h-5 w-5 text-green-400" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-green-700">{message}</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="mt-6 bg-white shadow overflow-hidden sm:rounded-lg">
-            <div className="px-4 py-5 border-b border-gray-200 sm:px-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">
-                Template Information
-              </h3>
-              <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                Basic information about the template.
-              </p>
-            </div>
-            <div className="px-4 py-5 sm:p-6">
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <div>
-                  <label
-                    htmlFor="name"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Template Name
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    id="name"
-                    className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                    value={template.name}
-                    onChange={(e) =>
-                      handleTemplateChange("name", e.target.value)
-                    }
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="type"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Template Type
-                  </label>
-                  <select
-                    id="type"
-                    name="type"
-                    className="mt-1 block w-full pl-3 pr-10 py-2 text-blue-500 border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                    value={template.type}
-                    onChange={(e) =>
-                      handleTemplateChange("type", e.target.value)
-                    }
-                  >
-                    {templateTypes.map((type) => (
-                      <option key={type.id} value={type.id}>
-                        {type.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label
-                    htmlFor="heading"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Heading
-                  </label>
-                  <input
-                    type="text"
-                    name="heading"
-                    id="heading"
-                    className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                    value={template.heading}
-                    onChange={(e) =>
-                      handleTemplateChange("heading", e.target.value)
-                    }
-                    placeholder="Enter a heading for the template"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="subheading"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Subheading
-                  </label>
-                  <input
-                    type="text"
-                    name="subheading"
-                    id="subheading"
-                    className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                    value={template.subheading}
-                    onChange={(e) =>
-                      handleTemplateChange("subheading", e.target.value)
-                    }
-                    placeholder="Enter a subheading for the template"
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <label
-                    htmlFor="description"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Description
-                  </label>
-                  <textarea
-                    id="description"
-                    name="description"
-                    rows={3}
-                    className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                    value={template.description}
-                    onChange={(e) =>
-                      handleTemplateChange("description", e.target.value)
-                    }
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6 bg-white shadow overflow-hidden sm:rounded-lg">
-            <div className="px-4 py-5 border-b border-gray-200 sm:px-6 flex justify-between items-center">
-              <div>
-                <h3 className="text-lg leading-6 font-medium text-gray-900">
-                  Template Sections
-                </h3>
-                <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                  Add and configure sections for your template.
-                </p>
-              </div>
-              <div className="relative inline-block text-left">
-                <div>
-                  <button
-                    type="button"
-                    className="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    id="section-menu"
-                    aria-expanded="true"
-                    aria-haspopup="true"
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Section
-                  </button>
-                </div>
-
-                <div
-                  className="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-10"
-                  role="menu"
-                  aria-orientation="vertical"
-                  aria-labelledby="section-menu"
+              <div className="group">
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Type</label>
+                <select
+                  value={template.type}
+                  onChange={(e) => handleTemplateChange("type", e.target.value)}
+                  className="w-full px-4 py-3 bg-[#0f1023] border border-white/10 rounded-xl text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all appearance-none cursor-pointer"
                 >
-                  <div className="py-1" role="none">
-                    {sectionTypes.map((sectionType) => (
-                      <button
-                        key={sectionType.id}
-                        onClick={() => addSection(sectionType.id)}
-                        className="text-gray-700 block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                        role="menuitem"
-                      >
-                        {sectionType.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                  {templateTypes.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+                </select>
+              </div>
+
+              <div className="group">
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Heading</label>
+                <input type="text" value={template.heading} onChange={(e) => handleTemplateChange("heading", e.target.value)} className="w-full px-4 py-3 bg-[#0f1023] border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-all" placeholder="Main Heading" />
+              </div>
+
+              <div className="group">
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Subheading</label>
+                <input type="text" value={template.subheading} onChange={(e) => handleTemplateChange("subheading", e.target.value)} className="w-full px-4 py-3 bg-[#0f1023] border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-all" placeholder="Subtitle" />
+              </div>
+
+              <div className="group">
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Description</label>
+                <textarea rows={4} value={template.description} onChange={(e) => handleTemplateChange("description", e.target.value)} className="w-full px-4 py-3 bg-[#0f1023] border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-all resize-none" placeholder="Brief description..." />
               </div>
             </div>
-            <div className="px-4 py-5 sm:p-6">
-              {template.sections.length === 0 ? (
-                <div className="text-center py-12">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="mx-auto h-12 w-12 text-gray-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">
-                    No sections
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Get started by adding a new section to your template.
-                  </p>
-                  <div className="mt-6">
+          </div>
+        </div>
+
+        {/* Right Column: Sections Builder */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-[#1e1b4b]/30 backdrop-blur-xl border border-white/5 rounded-2xl p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-bold text-white">Sections Builder</h3>
+              <div className="relative group">
+                <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors">
+                  <Plus className="w-4 h-4" /> Add Section
+                </button>
+                <div className="absolute right-0 top-full mt-2 w-48 bg-[#0f1023] border border-white/10 rounded-xl shadow-xl overflow-hidden hidden group-hover:block z-20">
+                  {sectionTypes.map((type) => (
                     <button
-                      type="button"
-                      onClick={() =>
-                        document.getElementById("section-menu").click()
-                      }
-                      className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      key={type.id}
+                      onClick={() => addSection(type.id)}
+                      className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-white/10 hover:text-white flex items-center gap-2 transition-colors"
                     >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add Section
+                      <type.icon className="w-4 h-4" />
+                      {type.label}
                     </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {template.sections.map((section, index) => (
-                    <div
-                      key={section.id}
-                      className="bg-gray-50 border border-gray-200 rounded-lg p-4"
-                    >
-                      <div className="flex justify-between items-start">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-indigo-100 rounded-md">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-6 w-6 text-indigo-600"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M4 6h16M4 12h16M4 18h7"
-                              />
-                            </svg>
-                          </div>
-                          <div className="ml-4">
-                            <h4 className="text-lg font-medium text-gray-900 capitalize">
-                              {section.type} Section
-                            </h4>
-                            <p className="text-sm text-gray-500">{`Position: ${
-                              index + 1
-                            }`}</p>
-                          </div>
-                        </div>
-                        <div className="flex space-x-2">
-                          {index > 0 && (
-                            <button
-                              onClick={() => moveSection(index, index - 1)}
-                              className="inline-flex items-center p-1 border border-gray-300 rounded-md text-gray-500 hover:bg-gray-50"
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-5 w-5"
-                                viewBox="0 0 20 20"
-                                fill="currentColor"
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
-                            </button>
-                          )}
-                          {index < template.sections.length - 1 && (
-                            <button
-                              onClick={() => moveSection(index, index + 1)}
-                              className="inline-flex items-center p-1 border border-gray-300 rounded-md text-gray-500 hover:bg-gray-50"
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-5 w-5"
-                                viewBox="0 0 20 20"
-                                fill="currentColor"
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
-                            </button>
-                          )}
-                          <button
-                            onClick={() => removeSection(section.id)}
-                            className="inline-flex items-center p-1 border border-transparent rounded-md text-red-500 hover:bg-red-50"
-                          >
-                            <Trash className="h-5 w-5" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">
-                            Section Title
-                          </label>
-                          <input
-                            type="text"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            value={section.title}
-                            onChange={(e) =>
-                              updateSection(section.id, "title", e.target.value)
-                            }
-                            placeholder="Enter a title for this section"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">
-                            Required
-                          </label>
-                          <div className="mt-3 flex items-center">
-                            <input
-                              id={`required-${section.id}`}
-                              type="checkbox"
-                              checked={section.required}
-                              onChange={(e) =>
-                                updateSection(
-                                  section.id,
-                                  "required",
-                                  e.target.checked
-                                )
-                              }
-                              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                            />
-                            <label
-                              htmlFor={`required-${section.id}`}
-                              className="ml-2 block text-sm text-gray-700"
-                            >
-                              Make this section required
-                            </label>
-                          </div>
-                        </div>
-                        <div className="sm:col-span-2">
-                          <label className="block text-sm font-medium text-gray-700">
-                            Description
-                          </label>
-                          <textarea
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            rows="2"
-                            value={section.description}
-                            onChange={(e) =>
-                              updateSection(
-                                section.id,
-                                "description",
-                                e.target.value
-                              )
-                            }
-                            placeholder="Instructions for users filling out this section"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Section specific configuration */}
-                      <div className="mt-4 pt-4 border-t border-gray-200">
-                        <h5 className="text-sm font-medium text-gray-700">
-                          Section Configuration
-                        </h5>
-                        {renderSectionConfig(section)}
-                      </div>
-                    </div>
                   ))}
                 </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {template.sections.length === 0 ? (
+                <div className="text-center py-12 border-2 border-dashed border-white/10 rounded-xl bg-white/5">
+                  <p className="text-gray-400">No sections added yet. Start adding content blocks.</p>
+                </div>
+              ) : (
+                <Reorder.Group axis="y" values={template.sections} onReorder={(newSections) => setTemplate({...template, sections: newSections})}>
+                  {template.sections.map((section, index) => (
+                    <Reorder.Item key={section.id} value={section} className="bg-[#0f1023] border border-white/10 rounded-xl overflow-hidden mb-4 shadow-lg">
+                      <div className="bg-white/5 px-4 py-3 flex items-center justify-between cursor-move">
+                        <div className="flex items-center gap-3">
+                           <GripVertical className="text-gray-500 w-5 h-5" />
+                           <span className="text-sm font-bold text-white uppercase tracking-wider">{section.type} Section</span>
+                        </div>
+                        <button onClick={() => removeSection(section.id)} className="text-gray-500 hover:text-red-400 transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      
+                      <div className="p-4 space-y-4">
+                         <div className="grid grid-cols-2 gap-4">
+                           <input 
+                              type="text" 
+                              placeholder="Section Title" 
+                              value={section.title} 
+                              onChange={(e) => updateSection(section.id, "title", e.target.value)}
+                              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500 transition-all"
+                           />
+                           <input 
+                              type="text" 
+                              placeholder="Description (Optional)" 
+                              value={section.description} 
+                              onChange={(e) => updateSection(section.id, "description", e.target.value)}
+                              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500 transition-all"
+                           />
+                         </div>
+                         
+                         {/* Config Fields based on Type */}
+                         <div className="bg-white/5 rounded-lg p-3 border border-white/5">
+                            <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Configuration</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                               {Object.entries(section.config).map(([key, val]) => (
+                                 <div key={key} className="flex flex-col">
+                                   <label className="text-[10px] text-gray-500 uppercase mb-1">{key.replace(/([A-Z])/g, ' $1').trim()}</label>
+                                   {Array.isArray(val) ? (
+                                     <div className="text-xs text-gray-300">{val.join(", ") || "None"}</div>
+                                   ) : (
+                                      <input 
+                                        type={typeof val === 'number' ? 'number' : 'text'}
+                                        value={val}
+                                        onChange={(e) => updateSectionConfig(section.id, key, typeof val === 'number' ? parseInt(e.target.value) : e.target.value)}
+                                        className="px-2 py-1 bg-[#0f1023] border border-white/10 rounded text-xs text-white focus:border-blue-500 outline-none"
+                                      />
+                                   )}
+                                 </div>
+                               ))}
+                            </div>
+                         </div>
+                      </div>
+                    </Reorder.Item>
+                  ))}
+                </Reorder.Group>
               )}
             </div>
-          </div>
-
-          <div className="mt-6 flex justify-end space-x-3">
-            <button
-              onClick={() => router.push("/admin/templates")}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => saveTemplate("draft")}
-              disabled={loading}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              <Save className="mr-2 h-4 w-4" />
-              Save Draft
-            </button>
-            <button
-              onClick={() => saveTemplate("published")}
-              disabled={loading}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-            >
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Publish
-            </button>
           </div>
         </div>
       </div>

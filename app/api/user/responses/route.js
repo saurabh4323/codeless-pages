@@ -120,12 +120,52 @@ export async function GET(request) {
         .sort({ createdAt: -1 });
       
       console.log("User responses found:", userResponses ? userResponses.length : 0);
+
+      // Enhance responses with question text
+      const enhancedResponses = await Promise.all(
+        userResponses.map(async (response) => {
+          try {
+            const templateQuestions = await TemplateQuestions.findOne({ 
+              templateId: response.templateId?._id || response.templateId 
+            }).lean();
+
+            if (templateQuestions && templateQuestions.questions) {
+              const enhancedResponseArray = (response.responses || []).map((resp, index) => {
+                const question = templateQuestions.questions[index];
+                
+                let selectedOptionText = resp.selectedOption;
+                const shorthands = ['a', 'b', 'c', 'd', 'e', 'f'];
+                const shorthandIndex = shorthands.indexOf(selectedOptionText?.toLowerCase());
+                
+                if (shorthandIndex !== -1 && question?.options && question.options[shorthandIndex]) {
+                  selectedOptionText = question.options[shorthandIndex].text;
+                }
+                
+                return {
+                  ...resp,
+                  questionText: resp.questionText || question?.questionText || `Question ${index + 1}`,
+                  selectedOption: selectedOptionText
+                };
+              });
+
+              return {
+                ...response.toObject(),
+                responses: enhancedResponseArray
+              };
+            }
+            return response.toObject();
+          } catch (err) {
+            console.error("Error enhancing response:", err);
+            return response.toObject();
+          }
+        })
+      );
       
       return NextResponse.json({
         success: true,
         message: "User responses fetched successfully",
-        data: userResponses,
-        count: userResponses.length
+        data: enhancedResponses,
+        count: enhancedResponses.length
       });
     } else {
       // If no contentId provided, fetch all questions (original behavior)
@@ -167,7 +207,7 @@ export async function POST(request) {
     const body = await request.json();
     console.log("Request body:", body);
     
-    const { templateId, contentId, userInfo, responses, tenantToken } = body;
+    const { templateId, userInfo, responses, tenantToken } = body;
     
     console.log("Tenant token received:", tenantToken);
     
@@ -178,7 +218,6 @@ export async function POST(request) {
     // Create a new user response
     const userResponse = new UserResponse({
       templateId,
-      contentId,
       userInfo,
       responses,
       tenantToken, // Adding tenant token to the user response

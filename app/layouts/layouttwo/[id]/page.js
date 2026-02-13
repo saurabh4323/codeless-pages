@@ -4,16 +4,23 @@ import { useParams } from "next/navigation";
 import Head from "next/head";
 import DynamicPopup from "@/app/components/DynamicPopup";
 
-export default function PaymentPage() {
-  const [content, setContent] = useState(null);
-  const [loading, setLoading] = useState(true);
+export default function PaymentPage({ previewContent = null }) {
+  const [dbContent, setDbContent] = useState(null);
+  const [loading, setLoading] = useState(!previewContent);
   const [error, setError] = useState("");
-  const { id } = useParams();
+  const params = useParams();
+  const id = params?.id;
   
+  const content = previewContent || dbContent;
   // Get template ID from content data
   const templateId = content?.templateId?._id || content?.templateId;
 
   useEffect(() => {
+    if (previewContent) {
+      setLoading(false);
+      return;
+    }
+
     const fetchData = async () => {
       try {
         setLoading(true);
@@ -67,8 +74,9 @@ export default function PaymentPage() {
           `Filtering content for templateId: ${templateId} and content ID: ${id}`
         );
         const filteredContent = contentData.content.find((content) => {
-          const contentTemplateId = content.templateId._id;
+          const contentTemplateId = content.templateId?._id;
           const matchesTemplate =
+            contentTemplateId &&
             contentTemplateId.toString() === templateId.toString();
           const matchesId = content._id.toString() === id;
           console.log(
@@ -79,11 +87,13 @@ export default function PaymentPage() {
 
         if (!filteredContent) {
           console.log("No content found for this template and ID.");
-          throw new Error("No content found for this template and ID");
+          setError("No content found for this template and ID");
+          setLoading(false);
+          return;
         }
 
         console.log("Filtered Content:", filteredContent);
-        setContent(filteredContent);
+        setDbContent(filteredContent);
       } catch (err) {
         console.error("Error fetching data:", err);
         setError(err.message || "Failed to fetch data");
@@ -95,7 +105,7 @@ export default function PaymentPage() {
     if (id) {
       fetchData();
     }
-  }, [id]);
+  }, [id, previewContent]);
 
   const renderImage = (url) => (
     <div className="relative group overflow-hidden rounded-2xl">

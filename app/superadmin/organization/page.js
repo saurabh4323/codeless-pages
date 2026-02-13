@@ -1,52 +1,70 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import { 
+  Search, 
+  Building2, 
+  MoreVertical, 
+  ShieldCheck, 
+  ShieldAlert, 
+  Copy, 
+  Check, 
+  RefreshCw, 
+  Power,
+  FileText,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import toast from "react-hot-toast";
 
 function TokenChip({ token }) {
-  const [showFull, setShowFull] = useState(false);
   const [copied, setCopied] = useState(false);
-  const short = token ? `${token.slice(0, 8)}…${token.slice(-6)}` : "—";
 
   const copy = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
     try {
       await navigator.clipboard.writeText(token || "");
       setCopied(true);
-      setTimeout(() => setCopied(false), 1200);
-    } catch (_) {}
+      toast.success("Token copied to clipboard");
+      setTimeout(() => setCopied(false), 2000);
+    } catch (_) {
+      toast.error("Failed to copy");
+    }
   };
 
   return (
-    <div className="flex items-center gap-2 mt-2">
-      <span className="px-2 py-1 rounded bg-blue-900/60 text-blue-100 font-mono text-xs break-all">
-        {showFull ? token : short}
-      </span>
+    <div className="flex items-center gap-2 bg-[#0f1023] rounded-lg p-1.5 border border-white/10 group-hover:border-blue-500/30 transition-colors max-w-full">
+      <code className="flex-1 text-xs font-mono text-blue-200/80 px-2 truncate">
+        {token}
+      </code>
       <button
         onClick={copy}
-        className="text-xs px-2 py-1 rounded bg-blue-700 text-white hover:bg-blue-600"
+        className="p-1.5 hover:bg-blue-600 rounded-md text-gray-400 hover:text-white transition-colors shrink-0"
+        title="Copy Token"
       >
-        {copied ? "Copied" : "Copy"}
-      </button>
-      <button
-        onClick={(e) => { e.preventDefault(); setShowFull((s) => !s); }}
-        className="text-xs px-2 py-1 rounded bg-white/20 text-blue-100 hover:bg-white/30"
-      >
-        {showFull ? "Hide" : "Show"}
+        {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
       </button>
     </div>
   );
 }
 
-function OrgCard({ org, onUpdate }) {
+function OrgCard({ org, matchingPages = [], onUpdate }) {
   const [loading, setLoading] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(null);
+  const [expanded, setExpanded] = useState(matchingPages.length > 0);
+  const [showActions, setShowActions] = useState(false);
 
-  const handleResetToken = async (e) => {
-    e.preventDefault();
-    if (showConfirm !== "reset") {
-      setShowConfirm("reset");
-      return;
+  // Auto-expand if there are matching pages from search
+  useEffect(() => {
+    if (matchingPages.length > 0) {
+      setExpanded(true);
     }
+  }, [matchingPages.length]);
 
+  const handleResetToken = async () => {
+    if (!confirm("Are you sure you want to reset the token? This will invalidate the existing token.")) return;
+    
     setLoading(true);
     try {
       const res = await fetch(`/api/organizations/${org.id}/reset-token`, {
@@ -56,20 +74,18 @@ function OrgCard({ org, onUpdate }) {
       if (!res.ok) throw new Error("Failed to reset token");
       const data = await res.json();
       onUpdate({ ...org, token: data.newToken });
-      setShowConfirm(null);
+      toast.success("Token reset successfully");
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
+      setShowActions(false);
     }
   };
 
-  const handleToggleStatus = async (e) => {
-    e.preventDefault();
-    if (showConfirm !== "pause") {
-      setShowConfirm("pause");
-      return;
-    }
+  const handleToggleStatus = async () => {
+    const action = org.isActive ? "pause" : "activate";
+    if (!confirm(`Are you sure you want to ${action} this organization?`)) return;
 
     setLoading(true);
     try {
@@ -80,188 +96,371 @@ function OrgCard({ org, onUpdate }) {
       if (!res.ok) throw new Error("Failed to update status");
       const data = await res.json();
       onUpdate({ ...org, isActive: data.isActive });
-      setShowConfirm(null);
+      toast.success(`Organization ${action}d successfully`);
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
+      setShowActions(false);
     }
   };
 
+  const handleCardClick = () => {
+    // Open admin tab (default)
+    window.open(`/superadmin/organization/${org.token}`, '_blank');
+    // Open users tab
+    window.open(`/superadmin/organization/${org.token}?tab=users`, '_blank');
+  };
+
   return (
-    <div className="block bg-white/15 hover:bg-white/20 transition rounded-lg p-5 border border-white/10">
-      <div className="flex items-center justify-between">
-        <div className="text-white font-semibold text-lg truncate max-w-[60%]">{org.name}</div>
-        <span className={`px-2 py-1 rounded text-xs ${org.isActive ? "bg-green-600/70 text-white" : "bg-red-500/70 text-white"}`}>
-          {org.isActive ? "Active" : "Paused"}
-        </span>
-      </div>
-      <div className="text-blue-200 text-sm mt-1">Admin: {org.adminEmail}</div>
-      <TokenChip token={org.token} />
-      <div className="text-blue-300 text-xs mt-3">
-        Created: {org.createdAt ? new Date(org.createdAt).toLocaleString() : "—"}
-      </div>
-      <div className="text-blue-300 text-xs">
-        Expires: {org.expiresAt ? new Date(org.expiresAt).toLocaleDateString() : "—"}
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      layout
+      onClick={handleCardClick}
+      className={`group relative bg-[#1e1b4b]/40 backdrop-blur-sm border ${
+        matchingPages.length > 0 ? "border-blue-500/50 bg-blue-900/10" : "border-white/5"
+      } rounded-2xl overflow-hidden hover:bg-[#1e1b4b]/60 transition-all duration-300 cursor-pointer`}
+    >
+      <div className="p-6">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-4">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+              org.isActive ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"
+            }`}>
+              <Building2 className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                {org.name}
+                {matchingPages.length > 0 && (
+                  <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-[10px] uppercase font-bold tracking-wider">
+                    Match Found
+                  </span>
+                )}
+              </h3>
+              <p className="text-sm text-gray-400">{org.adminEmail}</p>
+            </div>
+          </div>
+          
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowActions(!showActions);
+              }}
+              className="p-2 hover:bg-white/5 rounded-lg text-gray-400 hover:text-white transition-colors"
+            >
+              <MoreVertical className="w-5 h-5" />
+            </button>
+            
+            <AnimatePresence>
+              {showActions && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                  className="absolute right-0 top-full mt-2 w-48 bg-[#1e1b4b] border border-white/10 rounded-xl shadow-xl z-20 py-1 overflow-hidden"
+                >
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleResetToken();
+                    }}
+                    disabled={loading}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-yellow-400 hover:bg-white/5 transition-colors"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Reset Token
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleStatus();
+                    }}
+                    disabled={loading}
+                    className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-white/5 transition-colors ${
+                      org.isActive ? "text-red-400" : "text-green-400"
+                    }`}
+                  >
+                    <Power className="w-4 h-4" />
+                    {org.isActive ? "Pause Account" : "Activate Account"}
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div onClick={(e) => e.stopPropagation()}>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Access Token</p>
+            <TokenChip token={org.token} />
+          </div>
+
+          <div className="flex items-center justify-between pt-2 border-t border-white/5">
+             <div className="flex items-center gap-4 text-xs text-gray-500">
+               <span>Pages: {org.pages?.length || 0}</span>
+               {org.expiresAt && (
+                 <span>Expires: {new Date(org.expiresAt).toLocaleDateString()}</span>
+               )}
+             </div>
+             <div className="flex items-center gap-2">
+               <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border ${
+                  org.isActive 
+                    ? "bg-green-500/10 text-green-400 border-green-500/20" 
+                    : "bg-red-500/10 text-red-400 border-red-500/20"
+                }`}>
+                  {org.isActive ? 'Active' : 'Paused'}
+                </span>
+             </div>
+          </div>
+        </div>
       </div>
 
-      <div className="flex gap-2 mt-4">
-        <button
-          onClick={handleResetToken}
-          disabled={loading}
-          className={`flex-1 px-3 py-2 rounded text-xs font-medium transition ${
-            showConfirm === "reset"
-              ? "bg-red-600 text-white hover:bg-red-700"
-              : "bg-yellow-600 text-white hover:bg-yellow-700"
-          } disabled:opacity-50`}
+      {/* Pages Section - Expandable */}
+      {(org.pages?.length > 0 || matchingPages.length > 0) && (
+        <div 
+          onClick={(e) => e.stopPropagation()}
+          className={`bg-[#0f1023]/30 border-t border-white/5 transition-all duration-300 ${expanded ? "max-h-[500px]" : "max-h-0"} overflow-hidden`}
         >
-          {loading && showConfirm === "reset" ? "Resetting..." : showConfirm === "reset" ? "Confirm Reset?" : "Reset Token"}
-        </button>
-        <button
-          onClick={handleToggleStatus}
-          disabled={loading}
-          className={`flex-1 px-3 py-2 rounded text-xs font-medium transition ${
-            showConfirm === "pause"
-              ? "bg-red-600 text-white hover:bg-red-700"
-              : org.isActive
-              ? "bg-orange-600 text-white hover:bg-orange-700"
-              : "bg-green-600 text-white hover:bg-green-700"
-          } disabled:opacity-50`}
+          <div className="p-4 space-y-2">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">
+              {matchingPages.length > 0 ? "Matching Pages" : "Organization Pages"}
+            </p>
+            {(matchingPages.length > 0 ? matchingPages : org.pages).slice(0, 5).map((page) => (
+              <div key={page._id} className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-colors group/page">
+                <div className="flex items-center gap-3">
+                  <div className="p-1.5 rounded bg-blue-500/10 text-blue-400">
+                    <FileText className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-300 font-medium group-hover/page:text-white transition-colors">
+                      {page.name || "Untitled Page"}
+                    </p>
+                    <p className="text-[10px] text-gray-500">
+                      /{page.slug || page._id}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 opacity-0 group-hover/page:opacity-100 transition-opacity">
+                  <span className={`px-1.5 py-0.5 text-[10px] rounded border ${
+                    page.status === 'published' 
+                      ? 'bg-green-500/10 text-green-400 border-green-500/20' 
+                      : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                  }`}>
+                    {page.status}
+                  </span>
+                  <a 
+                    href={`/template/${page._id}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    onClick={(e) => e.stopPropagation()}
+                    className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              </div>
+            ))}
+            {(matchingPages.length > 0 ? matchingPages : org.pages).length > 5 && (
+              <p className="text-xs text-center text-gray-500 py-1">
+                +{(matchingPages.length > 0 ? matchingPages : org.pages).length - 5} more pages
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+      
+      {/* Expand/Collapse Toggle */}
+      {org.pages?.length > 0 && (
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            setExpanded(!expanded);
+          }}
+          className="w-full py-1 bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-500 hover:text-white transition-colors text-xs"
         >
-          {loading && showConfirm === "pause"
-            ? "Updating..."
-            : showConfirm === "pause"
-            ? "Confirm?"
-            : org.isActive
-            ? "Pause Account"
-            : "Activate Account"}
-        </button>
-      </div>
-
-      {showConfirm && (
-        <button
-          onClick={(e) => { e.preventDefault(); setShowConfirm(null); }}
-          className="w-full mt-2 px-3 py-1 rounded text-xs bg-gray-600 text-white hover:bg-gray-700"
-        >
-          Cancel
+          {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </button>
       )}
-
-      <a
-        href={`/superadmin/organization/${encodeURIComponent(org.token)}`}
-        className="block mt-3 text-blue-100 text-sm hover:text-blue-50"
-      >
-        View admins →
-      </a>
-    </div>
+    </motion.div>
   );
 }
 
 export default function OrganizationsPage() {
   const [organizations, setOrganizations] = useState([]);
+  const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("recent");
-
+  
+  // Fetch data
   useEffect(() => {
-    const fetchOrgs = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`/api/organizations`, {
-          headers: { "x-superadmin": "true" },
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        setOrganizations(data.organizations || []);
-        setError("");
+        // Parallel fetch
+        const [orgsRes, templatesRes] = await Promise.all([
+          fetch(`/api/organizations`, { headers: { "x-superadmin": "true" } }),
+          fetch(`/api/templates?all=true`, { headers: { "x-superadmin": "true" } })
+        ]);
+        
+        const orgData = await orgsRes.json();
+        const templateData = await templatesRes.json();
+        
+        // Process data
+        const allTemplates = templateData.templates || [];
+        const allOrgs = (orgData.organizations || []).map(org => ({
+          ...org,
+          pages: allTemplates.filter(t => t.tenantToken === org.token)
+        }));
+        
+        setOrganizations(allOrgs);
+        setTemplates(allTemplates);
       } catch (e) {
         console.error(e);
-        setError("Failed to fetch organizations.");
+        toast.error("Failed to fetch data");
       } finally {
         setLoading(false);
       }
     };
-    fetchOrgs();
+    fetchData();
   }, []);
 
   const handleOrgUpdate = (updatedOrg) => {
-    setOrganizations((orgs) =>
-      orgs.map((o) => (o.id === updatedOrg.id ? updatedOrg : o))
-    );
+    setOrganizations(prev => prev.map(o => o.id === updatedOrg.id ? { ...updatedOrg, pages: o.pages } : o));
   };
 
-  const filtered = useMemo(() => {
+  // Filter and Sort
+  const filteredData = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
-    let list = organizations;
+    
+    // First, find matching pages
+    const matchingPageMap = new Map(); // OrgID -> [Matching Pages]
+    
     if (q) {
-      list = list.filter((o) =>
+      templates.forEach(t => {
+        if ((t.name || "").toLowerCase().includes(q)) {
+          // Find which org owns this template
+          const org = organizations.find(o => o.token === t.tenantToken);
+          if (org) {
+            const current = matchingPageMap.get(org.id) || [];
+            matchingPageMap.set(org.id, [...current, t]);
+          }
+        }
+      });
+    }
+
+    let filtered = organizations.filter(o => {
+      // If searching, check for org match OR page match
+      if (!q) return true;
+      
+      const orgMatches = 
         (o.name || "").toLowerCase().includes(q) ||
         (o.token || "").toLowerCase().includes(q) ||
-        (o.adminEmail || "").toLowerCase().includes(q)
-      );
-    }
-    if (sortBy === "name") {
-      list = [...list].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-    } else {
-      list = [...list].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-    }
-    return list;
-  }, [organizations, searchTerm, sortBy]);
+        (o.adminEmail || "").toLowerCase().includes(q);
+        
+      const hasMatchingPages = matchingPageMap.has(o.id);
+      
+      return orgMatches || hasMatchingPages;
+    });
 
+    // Sort
+    filtered = filtered.sort((a, b) => {
+      if (sortBy === "name") return (a.name || "").localeCompare(b.name || "");
+      if (sortBy === "pages") return (b.pages?.length || 0) - (a.pages?.length || 0);
+      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+    });
+
+    return { filtered, matchingPageMap };
+  }, [organizations, templates, searchTerm, sortBy]);
+  
+  const { filtered, matchingPageMap } = filteredData;
   const total = organizations.length;
   const active = organizations.filter((o) => o.isActive).length;
+  const totalPages = templates.length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 p-6">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-white mb-6">Organizations Management</h1>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-2">Organizations</h1>
+          <p className="text-gray-400">View and manage all tenant organizations and their content.</p>
+        </div>
         
-        <div className="bg-white/10 rounded-xl p-6 shadow-lg">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-            <div className="col-span-1 lg:col-span-2 flex items-center gap-3">
-              <input
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by name, token, or email"
-                className="flex-1 px-4 py-3 rounded-lg bg-white/20 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-3 rounded-lg bg-white/20 text-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              >
-                <option value="recent">Recent</option>
-                <option value="name">Name</option>
-              </select>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-white/15 rounded-lg p-4">
-                <div className="text-blue-200 text-xs">Total Orgs</div>
-                <div className="text-white text-2xl font-semibold">{total}</div>
-              </div>
-              <div className="bg-white/15 rounded-lg p-4">
-                <div className="text-blue-200 text-xs">Active</div>
-                <div className="text-white text-2xl font-semibold">{active}</div>
-              </div>
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="text-blue-300">Loading organizations...</div>
-          ) : error ? (
-            <div className="text-red-400">{error}</div>
-          ) : filtered.length === 0 ? (
-            <div className="text-blue-200">No organizations found.</div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filtered.map((org) => (
-                <OrgCard key={org.id} org={org} onUpdate={handleOrgUpdate} />
-              ))}
-            </div>
-          )}
+        <div className="flex items-center gap-4 bg-[#1e1b4b]/30 backdrop-blur-sm p-2 rounded-xl border border-white/5">
+           <div className="px-4 py-2">
+             <p className="text-xs text-gray-500 uppercase tracking-wider">Total Orgs</p>
+             <p className="text-xl font-bold text-white">{total}</p>
+           </div>
+           <div className="w-px h-8 bg-white/10" />
+           <div className="px-4 py-2">
+             <p className="text-xs text-gray-500 uppercase tracking-wider">Active</p>
+             <p className="text-xl font-bold text-green-400">{active}</p>
+           </div>
+           <div className="w-px h-8 bg-white/10" />
+           <div className="px-4 py-2">
+             <p className="text-xs text-gray-500 uppercase tracking-wider">Total Pages</p>
+             <p className="text-xl font-bold text-blue-400">{totalPages}</p>
+           </div>
         </div>
       </div>
+
+      {/* Search & Filter */}
+      <div className="sticky top-24 z-30 bg-[#0f1023]/80 backdrop-blur-md py-4 -mx-4 px-4 border-b border-white/5">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+            <input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search organizations, emails, or page titles (Reverse Lookup)..."
+              className="w-full bg-[#1e1b4b] border border-white/10 rounded-xl pl-12 pr-4 py-3.5 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all shadow-lg shadow-black/20"
+            />
+          </div>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="px-4 py-3.5 rounded-xl bg-[#1e1b4b] border border-white/10 text-gray-300 focus:outline-none focus:border-blue-500/50"
+          >
+            <option value="recent">Most Recent</option>
+            <option value="name">Name (A-Z)</option>
+            <option value="pages">Most Pages</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Content */}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="h-64 bg-[#1e1b4b]/20 rounded-2xl animate-pulse border border-white/5" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="py-20 text-center">
+          <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Search className="w-10 h-10 text-gray-600" />
+          </div>
+          <h3 className="text-xl font-bold text-white mb-2">No matches found</h3>
+          <p className="text-gray-400 max-w-md mx-auto">
+            We couldn't find any organizations or pages matching "{searchTerm}". Try checking for typos or use different keywords.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filtered.map((org) => (
+            <OrgCard 
+              key={org.id} 
+              org={org} 
+              matchingPages={matchingPageMap.get(org.id) || []}
+              onUpdate={handleOrgUpdate} 
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -5,44 +5,41 @@ import Image from "next/image";
 import Head from "next/head";
 import DynamicPopup from "../../../components/DynamicPopup";
 
-export default function LayoutOne() {
-  const [content, setContent] = useState(null);
-  const [loading, setLoading] = useState(true);
+export default function LayoutOne({ previewContent = null }) {
+  const [dbContent, setDbContent] = useState(null);
+  const [loading, setLoading] = useState(!previewContent);
   const [error, setError] = useState("");
   const [popupComplete, setPopupComplete] = useState(false);
-  const { id } = useParams();
+  const params = useParams();
+  const id = params?.id;
+
+  const content = previewContent || dbContent;
 
   useEffect(() => {
+    if (previewContent) {
+      setLoading(false);
+      return;
+    }
+
     const fetchData = async () => {
       try {
         setLoading(true);
-        console.log("Fetching content from /api/upload...");
         const contentResponse = await fetch("/api/upload");
-        console.log("Content Response Status:", contentResponse.status);
         const contentData = await contentResponse.json();
-        console.log("Content Data:", contentData);
 
         if (!contentData.success) {
           throw new Error("Failed to fetch content");
         }
 
-        console.log("All Content Entries:", contentData.content);
-        console.log(`Filtering content for ID: ${id}`);
         const filteredContent = contentData.content.find((content) => {
-          const matchesId = content._id.toString() === id;
-          console.log(`Content ID: ${content._id}, Matches ID: ${matchesId}`);
-          return matchesId;
+          return content._id.toString() === id;
         });
 
         if (!filteredContent) {
-          console.log("No content found for this ID.");
           throw new Error("No content found for this ID");
         }
 
-        console.log("Filtered Content:", filteredContent);
-        console.log("askUserDetails:", filteredContent.askUserDetails);
-        console.log("templateId:", filteredContent.templateId);
-        setContent(filteredContent);
+        setDbContent(filteredContent);
       } catch (err) {
         console.error("Error fetching data:", err);
         setError(err.message || "Failed to fetch data");
@@ -54,7 +51,7 @@ export default function LayoutOne() {
     if (id) {
       fetchData();
     }
-  }, [id]);
+  }, [id, previewContent]);
 
   const renderVideo = (url) => {
     console.log("Video URL:", url);

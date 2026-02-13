@@ -7,13 +7,15 @@ export async function POST(req) {
     await connectDB();
     const { password } = await req.json();
 
-    // Fetch the stored admin password (assuming only one admin password exists)
-    const storedPassword = await Password.findOne();
+    // Fetch the stored admin password
+    let storedPassword = await Password.findOne();
 
     if (!storedPassword) {
+      // If no password exists, create it (Initial setup)
+      storedPassword = await Password.create({ password });
       return NextResponse.json(
-        { success: false, message: "No admin password set" },
-        { status: 404 }
+        { success: true, message: "Admin password set successfully" },
+        { status: 201 }
       );
     }
 
