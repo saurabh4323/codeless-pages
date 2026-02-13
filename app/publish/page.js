@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import UserNavbar from "../user/Header";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowLeft,
   Layout,
@@ -211,10 +212,11 @@ export default function YourPublishedContent() {
                       className="bg-white rounded-[40px] border-2 border-slate-50 hover:border-black overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-700 cursor-pointer group p-4"
                     >
                       <div className="aspect-[16/10] bg-slate-50 rounded-[30px] relative overflow-hidden">
-                         <img 
+                         <Image 
                            src={config.img} 
                            alt={template.name} 
-                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-90 group-hover:opacity-100" 
+                           fill
+                           className="object-cover group-hover:scale-105 transition-transform duration-700 opacity-90 group-hover:opacity-100" 
                          />
                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-500" />
                          <div className="absolute bottom-6 right-6 translate-y-10 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-500">
@@ -286,7 +288,7 @@ export default function YourPublishedContent() {
                         <Plus className="w-8 h-8 text-slate-200" />
                      </div>
                      <h3 className="text-2xl font-bold text-slate-900 mb-2">No pages found</h3>
-                     <p className="text-slate-500 font-light mb-10 max-w-sm mx-auto">You haven't created any pages using the <b>{selectedTemplate.name}</b> layout yet.</p>
+                     <p className="text-slate-500 font-light mb-10 max-w-sm mx-auto">{"You haven't created any pages using the"} <b>{selectedTemplate.name}</b> {"layout yet."}</p>
                      <Link href={`/user/tem/${selectedTemplate._id}`} className="button-primary px-10 py-4 text-base">
                         Build Your First Page
                      </Link>

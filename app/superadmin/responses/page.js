@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { 
   Download, 
   Filter, 
@@ -83,9 +83,9 @@ export default function AdminResponsesDashboard() {
 
   useEffect(() => {
     fetchData();
-  }, []); // Initial load
+  }, [fetchData]); // Initial load
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -117,7 +117,7 @@ export default function AdminResponsesDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedTemplate, selectedTenant, selectedContent, dateRange.start, dateRange.end]);
 
   const handleApplyFilters = () => {
     fetchData();

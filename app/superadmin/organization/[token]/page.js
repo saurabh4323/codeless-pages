@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -26,9 +26,9 @@ export default function OrganizationDetailsPage() {
         fetchUsers();
       }
     }
-  }, [token, activeTab]);
+  }, [token, activeTab, fetchAdmins, fetchUsers]);
 
-  const fetchAdmins = async () => {
+  const fetchAdmins = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch(`/api/admins`, {
@@ -44,9 +44,9 @@ export default function OrganizationDetailsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch(`/api/superadmin/organization/${token}/users`);
@@ -60,7 +60,7 @@ export default function OrganizationDetailsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
   const handleUserClick = async (user) => {
     setSelectedUser(user);
@@ -283,7 +283,7 @@ export default function OrganizationDetailsPage() {
               <div className="p-6 overflow-y-auto flex-1 bg-[#0f1023]/50">
                 <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                   <FileText className="w-5 h-5 text-blue-400" />
-                  Created Pages & Content
+                  {"Created Pages & Content"}
                 </h3>
                 
                 {contentLoading ? (

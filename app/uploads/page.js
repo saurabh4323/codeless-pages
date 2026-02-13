@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Loader2 } from "lucide-react";
+import Image from "next/image";
 
 export default function UploadList() {
   const [uploads, setUploads] = useState([]);
@@ -77,11 +78,14 @@ function renderContent(type, content) {
   switch (type) {
     case "image":
       return (
-        <img
-          src={content}
-          alt="Uploaded Image"
-          className="rounded-md object-cover w-full h-48"
-        />
+        <div className="relative w-full h-48 rounded-md overflow-hidden">
+          <Image
+            src={content}
+            alt="Uploaded Image"
+            fill
+            className="object-cover"
+          />
+        </div>
       );
     case "video":
       return (

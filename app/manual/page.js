@@ -142,7 +142,7 @@ export default function ContentUploadManual() {
              
              <h2 className="text-3xl font-semibold mb-6">Need Help?</h2>
              <p className="text-slate-400 font-light mb-10 max-w-xl mx-auto leading-relaxed text-sm">
-               If you find any mistakes or need assistance, take a screenshot and contact our support team. We're here to help you go live.
+               {"If you find any mistakes or need assistance, take a screenshot and contact our support team. We're here to help you go live."}
              </p>
 
              <div className="flex flex-col md:flex-row items-center justify-center gap-6 mb-16">

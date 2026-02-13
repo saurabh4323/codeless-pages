@@ -11,7 +11,8 @@ import {
   HelpCircle,
   ChevronRight,
   Save,
-  Trash
+  Trash,
+  Database
 } from "lucide-react";
 
 export default function SuperadminQuestions() {
