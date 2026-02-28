@@ -25,24 +25,25 @@ export async function GET(request) {
     const tenantToken = request.headers.get("x-admin-token");
     let templates;
     
-    if (!tenantToken) {
-      return NextResponse.json({
-        success: false,
-        message: "Missing admin token",
-      }, { status: 401 });
+    // Build query based on whether tenantToken is provided
+    const query = { ...filter };
+    if (tenantToken) {
+      query.$or = [
+        { tenantToken: tenantToken },
+        { tenantToken: { $exists: false } },
+        { tenantToken: null }
+      ];
     } else {
-      // Return templates that either:
-      // 1. Match this tenant's token, OR
-      // 2. Don't have a tenantToken (legacy templates)
-      templates = await Template.find({
-        ...filter,
-        $or: [
-          { tenantToken: tenantToken },
-          { tenantToken: { $exists: false } },
-          { tenantToken: null }
-        ]
-      }).sort({ createdAt: 1 });
+      // If no token, we can still return templates that are meant to be public/legacy
+      // or just return everything if that's the desired behavior.
+      // For now, let's keep it consistent with the previous logic but without the 401.
+      query.$or = [
+        { tenantToken: { $exists: false } },
+        { tenantToken: null }
+      ];
     }
+
+    templates = await Template.find(query).sort({ createdAt: 1 });
 
     return NextResponse.json({
       success: true,

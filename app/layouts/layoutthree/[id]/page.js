@@ -189,7 +189,11 @@ export default function ThankyouPage({ previewContent = null }) {
     (section) => section.type === "image"
   );
   const videoSection = sections.find((section) => section.type === "video");
-  const bodyTextSection = sections.find((section) => section.type === "text");
+  const textSections = sections.filter((section) => section.type === "text");
+  
+  // Separate body text from button label
+  const bodyTextSections = textSections.length > 1 ? textSections.slice(0, -1) : textSections;
+  const buttonTextLabel = textSections.length > 1 ? textSections[textSections.length - 1].value : "Continue Your Journey";
 
   return (
     <>
@@ -227,18 +231,23 @@ export default function ThankyouPage({ previewContent = null }) {
 
         {/* Main content */}
         <div className="relative z-10 min-h-screen flex flex-col">
-          {/* Hero section */}
-          <div className="flex-1 flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-20">
+          {/* Top/Center Content section */}
+          <div className="flex-1 flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 pt-24 pb-12">
             {/* Heading */}
-            <div className="text-center mb-16 max-w-5xl">
-              <h1 className="text-6xl sm:text-7xl lg:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-blue-400 to-purple-400 mb-6 leading-tight tracking-tight">
+            <div className="text-center mb-20 max-w-5xl">
+              <h1 className="text-6xl sm:text-7xl lg:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-blue-400 to-purple-400 mb-8 leading-tight tracking-tight">
                 {content.heading}
               </h1>
-              <div className="w-24 h-1 bg-gradient-to-r from-teal-400 to-purple-400 mx-auto rounded-full"></div>
+              <div className="w-24 h-1 bg-gradient-to-r from-teal-400 to-purple-400 mx-auto rounded-full mb-10"></div>
+              {content.subheading && (
+                <p className="text-xl sm:text-2xl text-white/70 font-light max-w-3xl mx-auto leading-relaxed">
+                  {content.subheading}
+                </p>
+              )}
             </div>
-
+ 
             {/* Video section */}
-            <div className="w-full max-w-5xl mb-16 px-4">
+            <div className="w-full max-w-5xl mb-24 px-4">
               {videoSection ? (
                 renderVideo(videoSection.value)
               ) : (
@@ -247,59 +256,56 @@ export default function ThankyouPage({ previewContent = null }) {
                 </div>
               )}
             </div>
-
+ 
             {/* Body text */}
-            <div className="text-center mb-16 max-w-4xl px-4">
-              {bodyTextSection ? (
-                <p className="text-xl sm:text-2xl text-white/90 leading-relaxed font-light tracking-wide">
-                  {bodyTextSection.value}
-                </p>
+            <div className="text-center mb-12 max-w-4xl px-4 space-y-6">
+              {bodyTextSections.length > 0 ? (
+                bodyTextSections.map((s, idx) => (
+                  <p key={idx} className="text-xl sm:text-2xl text-white/90 leading-relaxed font-light tracking-wide">
+                    {s.value}
+                  </p>
+                ))
               ) : (
                 <p className="text-xl text-white/60 leading-relaxed italic">
                   No description available.
                 </p>
               )}
             </div>
-
-            {/* CTA Button */}
-            <div className="text-center mb-20">
-              {linkSection?.value ? (
-                <a
-                  href={linkSection.value}
-                  className="group relative inline-flex items-center justify-center px-12 py-4 text-lg font-semibold text-white transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-teal-400/50"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-teal-500 via-blue-500 to-purple-600 rounded-2xl transition-all duration-300 group-hover:shadow-2xl group-hover:shadow-teal-500/25"></div>
-                  <div className="absolute inset-0 bg-gradient-to-r from-teal-600 via-blue-600 to-purple-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <span className="relative flex items-center gap-3">
-                    {(() => {
-                      const textSections = sections.filter(
-                        (section) => section.type === "text"
-                      );
-                      const lastTextSection =
-                        textSections[textSections.length - 1];
-                      return lastTextSection?.value || "Continue Your Journey";
-                    })()}
-                    <svg
-                      className="w-5 h-5 transform group-hover:translate-x-1 transition-transform duration-300"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 7l5 5m0 0l-5 5m5-5H6"
-                      />
-                    </svg>
+          </div>
+ 
+          {/* Bottom Button section */}
+          <div className="w-full px-4 sm:px-6 lg:px-8 pb-24 text-center">
+            {linkSection?.value ? (
+              <a
+                href={linkSection.value}
+                className="group relative inline-flex items-center justify-center px-10 py-5 text-xl font-bold text-white transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-teal-400/50 w-full sm:w-auto min-w-[280px] max-w-md mx-auto"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-teal-500 via-blue-500 to-purple-600 rounded-3xl transition-all duration-300 group-hover:shadow-2xl group-hover:shadow-teal-500/25"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-teal-600 via-blue-600 to-purple-700 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <span className="relative flex items-center justify-center gap-4 text-center">
+                  <span className="truncate max-w-[320px]">
+                    {buttonTextLabel.length > 40 ? "Continue Experience" : buttonTextLabel}
                   </span>
-                </a>
-              ) : (
-                <div className="px-12 py-4 bg-white/10 backdrop-blur-sm text-white/60 rounded-2xl border border-white/20">
-                  No action available
-                </div>
-              )}
-            </div>
+                  <svg
+                    className="w-6 h-6 flex-shrink-0 transform group-hover:translate-x-2 transition-transform duration-300"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 7l5 5m0 0l-5 5m5-5H6"
+                    />
+                  </svg>
+                </span>
+              </a>
+            ) : (
+              <div className="px-12 py-4 bg-white/10 backdrop-blur-sm text-white/60 rounded-2xl border border-white/20 inline-block text-sm font-medium">
+                No action available
+              </div>
+            )}
           </div>
         </div>
       </div>

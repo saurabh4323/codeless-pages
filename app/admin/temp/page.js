@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Head from "next/head";
-import { CheckCircle, Plus, Save, X, Trash2, Edit3, Image as ImageIcon, Video, FileText, Link as LinkIcon, GripVertical, Settings } from "lucide-react";
+import { CheckCircle, Plus, Save, X, Trash2, Edit3, Image as ImageIcon, Video, FileText, Link as LinkIcon, GripVertical, Settings, Upload } from "lucide-react";
 import apiClient from "@/utils/apiClient";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 
@@ -21,6 +21,7 @@ export default function CreateTemplate() {
     status: "draft",
     sections: [],
     createdBy: "",
+    thumbnail: "",
   });
 
   useEffect(() => {
@@ -128,6 +129,36 @@ export default function CreateTemplate() {
     }
   };
 
+  const handleThumbnailUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      setLoading(true);
+      const uploadForm = new FormData();
+      uploadForm.append("file", file);
+      uploadForm.append("upload_preset", "tempelate"); 
+
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/ddyhobnzf/image/upload`,
+        { method: "POST", body: uploadForm }
+      );
+
+      const data = await response.json();
+      if (data.secure_url) {
+        handleTemplateChange("thumbnail", data.secure_url);
+        setMessage("Thumbnail uploaded successfully!");
+      } else {
+        setError("Failed to upload thumbnail");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Failed to upload thumbnail");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       <Head>
@@ -221,6 +252,22 @@ export default function CreateTemplate() {
               <div className="group">
                 <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Heading</label>
                 <input type="text" value={template.heading} onChange={(e) => handleTemplateChange("heading", e.target.value)} className="w-full px-4 py-3 bg-[#0f1023] border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-all" placeholder="Main Heading" />
+              </div>
+
+               <div className="group">
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Thumbnail</label>
+                <div className="flex items-center gap-4">
+                  {template.thumbnail && (
+                    <img src={template.thumbnail} alt="Thumbnail preview" className="w-16 h-16 object-cover rounded-lg border border-white/10" />
+                  )}
+                  <div className="flex-1">
+                    <label className="flex items-center justify-center w-full px-4 py-3 bg-[#0f1023] border border-white/10 border-dashed rounded-xl cursor-pointer hover:bg-white/5 transition-all text-gray-400 hover:text-white">
+                      <Upload className="w-4 h-4 mr-2" />
+                      <span className="text-sm">{template.thumbnail ? "Change Image" : "Upload Image"}</span>
+                      <input type="file" accept="image/*" onChange={handleThumbnailUpload} className="hidden" />
+                    </label>
+                  </div>
+                </div>
               </div>
 
               <div className="group">

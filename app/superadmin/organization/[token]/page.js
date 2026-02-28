@@ -18,16 +18,6 @@ export default function OrganizationDetailsPage() {
   const [userContent, setUserContent] = useState([]);
   const [contentLoading, setContentLoading] = useState(false);
 
-  useEffect(() => {
-    if (token) {
-      if (activeTab === "admins") {
-        fetchAdmins();
-      } else {
-        fetchUsers();
-      }
-    }
-  }, [token, activeTab, fetchAdmins, fetchUsers]);
-
   const fetchAdmins = useCallback(async () => {
     try {
       setLoading(true);
@@ -61,6 +51,16 @@ export default function OrganizationDetailsPage() {
       setLoading(false);
     }
   }, [token]);
+
+  useEffect(() => {
+    if (token) {
+      if (activeTab === "admins") {
+        fetchAdmins();
+      } else {
+        fetchUsers();
+      }
+    }
+  }, [token, activeTab, fetchAdmins, fetchUsers]);
 
   const handleUserClick = async (user) => {
     setSelectedUser(user);

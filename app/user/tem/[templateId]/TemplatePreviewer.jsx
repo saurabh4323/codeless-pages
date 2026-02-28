@@ -37,9 +37,18 @@ function buildContentObject(formData, template) {
   const sections = {};
   if (template && Array.isArray(template.sections)) {
     template.sections.forEach((section) => {
+      let value = formData[section.id] || "";
+      if (value && typeof value === "object" && typeof URL !== "undefined") {
+        try {
+          value = URL.createObjectURL(value);
+        } catch (err) {
+          console.error("Failed to create object URL for file", err);
+        }
+      }
+
       sections[section.id] = {
         type: section.type,
-        value: formData[section.id] || "",
+        value: value,
       };
     });
   }

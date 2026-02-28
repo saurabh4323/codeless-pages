@@ -81,10 +81,6 @@ export default function AdminResponsesDashboard() {
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
   const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]); // Initial load
-
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
@@ -118,6 +114,10 @@ export default function AdminResponsesDashboard() {
       setLoading(false);
     }
   }, [selectedTemplate, selectedTenant, selectedContent, dateRange.start, dateRange.end]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]); // Initial load
 
   const handleApplyFilters = () => {
     fetchData();
