@@ -4,6 +4,9 @@ import Content from "@/modal/Upload";
 import { TemplateQuestions } from "@/modal/DynamicPopop";
 import { UserResponse } from "@/modal/DynamicPopop";
 import AdminToken from "@/modal/AdminToken";
+import EmailSequence from "@/modal/EmailSequence";
+import ScheduledEmail from "@/modal/ScheduledEmail";
+import { Resend } from "resend";
 
 export async function GET(request) {
   try {
@@ -280,54 +283,101 @@ export async function POST(request) {
       // Do not fail the response submission due to email errors
     }
 
-    // Also send a confirmation email to the responding user (popup email)
+    // Send Custom Email Sequence to user
     try {
       const userEmail = userInfo?.email;
       if (userEmail) {
-        const adminTokenDoc = tenantToken
-          ? await AdminToken.findOne({ token: tenantToken }).lean()
-          : null;
-        const tenantName = adminTokenDoc?.tenantName || "CodelessPages";
+        // Find if there's a custom sequence for this content/template
+        await connectDB();
+        
+        // Get contentId from URL if possible or just use templateId and tenantToken
+        const sequence = await EmailSequence.findOne({ 
+          templateId, 
+          tenantToken,
+          isEnabled: true 
+        }).lean();
 
-        const emailEndpoint = new URL('/api/email', request.url).toString();
-        const subject = `Thanks for your submission - ${tenantName}`;
-        const responderName = userInfo?.name || userInfo?.fullName || "there";
-        const responseCount = Array.isArray(responses) ? responses.length : 0;
-        const previewLines = Array.isArray(responses)
-          ? responses.slice(0, 5).map((r, i) => `<li>Q${i + 1}: ${r.selectedOption || r.answer || ''}</li>`).join('')
-          : '';
+        if (sequence && sequence.steps && sequence.steps.length > 0) {
+          const responderName = userInfo?.name || userInfo?.fullName || "there";
+          const emailEndpoint = new URL('/api/email', request.url).toString();
+          
+          let cumulativeDelay = 0;
 
-        const message = `
-          <div style="font-family: Arial, sans-serif; max-width: 640px; margin:0 auto;">
-            <h2 style="color:#111">Thank you, ${responderName}!</h2>
-            <p>We received your submission for <strong>${tenantName}</strong>.</p>
-            <p><strong>Template ID:</strong> ${templateId}</p>
-            <p><strong>Total Responses:</strong> ${responseCount}</p>
-            ${responseCount > 0 ? `<p>Preview of your answers:</p><ul>${previewLines}</ul>` : ''}
-            <p style="color:#555">If this wasn't you, you can ignore this email.</p>
-          </div>
-        `;
+          for (let i = 0; i < sequence.steps.length; i++) {
+            const step = sequence.steps[i];
+            
+            // Convert everything to minutes for cumulative calculation
+            let stepMinutes = step.delay || 0;
+            if (step.delayUnit === "hours") stepMinutes *= 60;
+            if (step.delayUnit === "days") stepMinutes *= 1440; // 60 * 24
+            
+            cumulativeDelay += stepMinutes;
+            
+            // Template variables replacement
+            const subject = step.subject.replace(/{{name}}/g, responderName);
+            const body = step.body
+              .replace(/{{name}}/g, responderName)
+              .replace(/{{email}}/g, userEmail);
 
-        const emailRes = await fetch(emailEndpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            to: userEmail,
-            subject,
-            message,
-            fromName: `${tenantName} Team`
-          })
-        });
+            if (cumulativeDelay === 0) {
+              // Send immediate email
+              await fetch(emailEndpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  to: userEmail,
+                  subject: subject,
+                  message: body,
+                  fromName: sequence.title || "CodelessPages"
+                })
+              });
+            } else {
+              // Schedule for later
+              const scheduledAt = new Date(Date.now() + cumulativeDelay * 60000);
+              await ScheduledEmail.create({
+                to: userEmail,
+                subject: subject,
+                body: body,
+                fromName: sequence.title || "CodelessPages",
+                scheduledAt: scheduledAt,
+                tenantToken: tenantToken,
+                status: "pending"
+              });
+            }
+          }
+        } else {
+          // Fallback to default email if no sequence
+          const adminTokenDoc = tenantToken
+            ? await AdminToken.findOne({ token: tenantToken }).lean()
+            : null;
+          const tenantName = adminTokenDoc?.tenantName || "CodelessPages";
 
-        if (!emailRes.ok) {
-          console.warn('Failed to send confirmation email to user');
+          const emailEndpoint = new URL('/api/email', request.url).toString();
+          const subject = `Thanks for your submission - ${tenantName}`;
+          const responderName = userInfo?.name || userInfo?.fullName || "there";
+
+          const message = `
+            <div style="font-family: Arial, sans-serif; max-width: 640px; margin:0 auto;">
+              <h2 style="color:#111">Thank you, ${responderName}!</h2>
+              <p>We received your submission for <strong>${tenantName}</strong>.</p>
+              <p style="color:#555">If this wasn't you, you can ignore this email.</p>
+            </div>
+          `;
+
+          await fetch(emailEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: userEmail,
+              subject,
+              message,
+              fromName: `${tenantName} Team`
+            })
+          });
         }
-      } else {
-        console.warn('User email missing in popup submission, skipping user email');
       }
     } catch (userEmailErr) {
-      console.error('Error while sending confirmation email to user:', userEmailErr);
-      // Do not fail the response submission due to email errors
+      console.error('Error while sending custom sequence/confirmation email:', userEmailErr);
     }
 
     return NextResponse.json({

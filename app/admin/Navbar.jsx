@@ -25,6 +25,7 @@ const navLinks = [
   { name: "Reports", href: "/admin/feedback", icon: MessageSquare }, // Feedback as Reports
   { name: "Questions", href: "/admin/questions", icon: HelpCircle },
   { name: "Responses", href: "/admin/responses", icon: BarChart3 },
+  { name: "Email Sequences", href: "/admin/email-sequences", icon: MessageSquare },
 ];
 
 export default function AdminNavbar() {

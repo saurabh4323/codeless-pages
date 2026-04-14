@@ -19,6 +19,20 @@ export default function DynamicPopup({ templateId, onComplete }) {
   const [userId, setUserId] = useState(null);
 
   useEffect(() => {
+    // Lazy cron: trigger email processing occasionally
+    const triggerEmails = async () => {
+      try {
+        await axios.get("/api/cron/process-emails");
+      } catch (err) {
+        // quiet fail
+      }
+    };
+    triggerEmails();
+    const interval = setInterval(triggerEmails, 30000); // Check Every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
     console.log("DynamicPopup useEffect triggered with templateId:", templateId);
     
     // Determine a stable key per content id if available, otherwise per template
